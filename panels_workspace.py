@@ -90,13 +90,11 @@ def _block_card(newsletter_id: str, order_index: int, s: dict) -> ui.UINode:
     if block_type != "divider":
         fields.append(ui.TextArea(param_name="content", value=s.get("content") or "", rows=4, placeholder="Block content"))
 
-    return ui.Card(children=[
-        ui.Form(
-            action="update_newsletter_section", submit_label=f"Save block #{order_index}",
-            defaults={"newsletter_id": newsletter_id, "order_index": order_index},
-            children=fields,
-        ),
-    ])
+    return ui.Card(content=ui.Form(
+        action="update_newsletter_section", submit_label=f"Save block #{order_index}",
+        defaults={"newsletter_id": newsletter_id, "order_index": order_index},
+        children=fields,
+    ))
 
 
 async def _render_newsletter_view(ctx, project_id: str, newsletter_id: str) -> ui.UINode:
