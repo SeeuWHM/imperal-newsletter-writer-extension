@@ -2900,7 +2900,7 @@
   "signals": [],
   "schedules": [],
   "required_scopes": [],
-  "icon_size_bytes": 267,
+  "icon_size_bytes": 419,
   "lifecycle": {
     "health_check": {
       "interval_sec": 60
