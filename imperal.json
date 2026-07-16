@@ -1,0 +1,2940 @@
+{
+  "manifest_schema_version": 3,
+  "sdk_version": "5.9.3",
+  "app_id": "imperal-newsletter-writer-extension",
+  "version": "1.0.0",
+  "name": "Newsletter Writer",
+  "description": "Project-based email newsletter writing: keep per-project context (brand voice, goals, reference links, reusable 'fill' items like promo codes) and have newsletters written cheaply, with mechanical quality gates and self-review, grounded in that context. Read/edit full newsletters in the panel — chat never touches full bodies.",
+  "icon": "icon.svg",
+  "actions_explicit": true,
+  "system": false,
+  "capabilities": [
+    "Project Context Store",
+    "Reusable Fill Items (promo codes, links, topics)",
+    "AI Newsletter Generation",
+    "Mechanical Quality Gates",
+    "Panel Newsletter Editor",
+    "Natural-Language Newsletter Patching"
+  ],
+  "tools": [
+    {
+      "name": "skeleton_refresh_newsletter_writer_overview",
+      "description": "Newsletter Writer projects + newsletter counts by status — degrades to zeros if backend unreachable",
+      "scopes": [],
+      "parameters": {}
+    },
+    {
+      "name": "create_project",
+      "description": "Create a new newsletter project — a container for one brand's context: goals, brand voice, keywords, useful links, socials, MailerLite targeting label. Use for: создай проект рассылки, новый проект для newsletter, add a new newsletter project.",
+      "action_type": "write",
+      "chain_callable": true,
+      "effects": [
+        "create:project"
+      ],
+      "id_projection": "",
+      "params_schema": {
+        "properties": {
+          "name": {
+            "description": "Project name",
+            "maxLength": 255,
+            "minLength": 1,
+            "title": "Name",
+            "type": "string"
+          },
+          "description": {
+            "anyOf": [
+              {
+                "maxLength": 5000,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Description"
+          },
+          "brand_voice": {
+            "anyOf": [
+              {
+                "maxLength": 5000,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "description": "How this brand writes/sounds",
+            "title": "Brand Voice"
+          },
+          "goals": {
+            "anyOf": [
+              {
+                "maxLength": 2000,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "description": "What these newsletters are meant to achieve",
+            "title": "Goals"
+          },
+          "keywords": {
+            "description": "Topics/keywords this project's newsletters cover",
+            "items": {
+              "type": "string"
+            },
+            "title": "Keywords",
+            "type": "array"
+          },
+          "useful_links": {
+            "items": {
+              "type": "string"
+            },
+            "title": "Useful Links",
+            "type": "array"
+          },
+          "social_links": {
+            "items": {
+              "type": "string"
+            },
+            "title": "Social Links",
+            "type": "array"
+          },
+          "mailerlite_account_label": {
+            "anyOf": [
+              {
+                "maxLength": 255,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "description": "Which MailerLite account/list this project targets, purely as context (no key stored here)",
+            "title": "Mailerlite Account Label"
+          },
+          "mailerlite_group_ids": {
+            "description": "MailerLite group IDs this project targets",
+            "items": {
+              "type": "string"
+            },
+            "title": "Mailerlite Group Ids",
+            "type": "array"
+          },
+          "reference_article_project_id": {
+            "anyOf": [
+              {
+                "maxLength": 36,
+                "minLength": 36,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "description": "Optional: an Article Writer project ID to pull grounding facts from",
+            "title": "Reference Article Project Id"
+          }
+        },
+        "required": [
+          "name"
+        ],
+        "title": "CreateProjectParams",
+        "type": "object"
+      },
+      "return_schema": {
+        "$defs": {
+          "ReferenceLinkRecord": {
+            "description": "One internal page the writer may link to. `description` = what the\npage is about / its target topic; the writer turns it into a natural,\nin-sentence anchor phrase (never the bare brand/domain).",
+            "properties": {
+              "url": {
+                "default": "",
+                "title": "Url",
+                "type": "string"
+              },
+              "description": {
+                "default": "",
+                "title": "Description",
+                "type": "string"
+              }
+            },
+            "title": "ReferenceLinkRecord",
+            "type": "object"
+          }
+        },
+        "properties": {
+          "id": {
+            "title": "Id",
+            "type": "string"
+          },
+          "name": {
+            "default": "",
+            "title": "Name",
+            "type": "string"
+          },
+          "description": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Description"
+          },
+          "brand_voice": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Brand Voice"
+          },
+          "goals": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Goals"
+          },
+          "keywords": {
+            "items": {
+              "type": "string"
+            },
+            "title": "Keywords",
+            "type": "array"
+          },
+          "useful_links": {
+            "items": {
+              "type": "string"
+            },
+            "title": "Useful Links",
+            "type": "array"
+          },
+          "social_links": {
+            "items": {
+              "type": "string"
+            },
+            "title": "Social Links",
+            "type": "array"
+          },
+          "reference_links": {
+            "items": {
+              "$ref": "#/$defs/ReferenceLinkRecord"
+            },
+            "title": "Reference Links",
+            "type": "array"
+          },
+          "mailerlite_account_label": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Mailerlite Account Label"
+          },
+          "mailerlite_group_ids": {
+            "items": {
+              "type": "string"
+            },
+            "title": "Mailerlite Group Ids",
+            "type": "array"
+          },
+          "reference_article_project_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Reference Article Project Id"
+          }
+        },
+        "required": [
+          "id"
+        ],
+        "title": "ProjectRecord",
+        "type": "object"
+      },
+      "event": "newsletter-writer.project.created",
+      "background": false,
+      "long_running": false,
+      "scopes": [],
+      "owner_chat_tool": "newsletter_writer"
+    },
+    {
+      "name": "list_projects",
+      "description": "List all newsletter projects — id, name, keywords, goals. Use for: покажи мои проекты рассылок, list my newsletter projects, what newsletter projects do I have.",
+      "action_type": "read",
+      "chain_callable": true,
+      "effects": [],
+      "id_projection": "",
+      "params_schema": {
+        "description": "No input required.",
+        "properties": {},
+        "title": "_EmptyParams",
+        "type": "object"
+      },
+      "return_schema": {
+        "$defs": {
+          "ProjectRecord": {
+            "properties": {
+              "id": {
+                "title": "Id",
+                "type": "string"
+              },
+              "name": {
+                "default": "",
+                "title": "Name",
+                "type": "string"
+              },
+              "description": {
+                "anyOf": [
+                  {
+                    "type": "string"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ],
+                "default": null,
+                "title": "Description"
+              },
+              "brand_voice": {
+                "anyOf": [
+                  {
+                    "type": "string"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ],
+                "default": null,
+                "title": "Brand Voice"
+              },
+              "goals": {
+                "anyOf": [
+                  {
+                    "type": "string"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ],
+                "default": null,
+                "title": "Goals"
+              },
+              "keywords": {
+                "items": {
+                  "type": "string"
+                },
+                "title": "Keywords",
+                "type": "array"
+              },
+              "useful_links": {
+                "items": {
+                  "type": "string"
+                },
+                "title": "Useful Links",
+                "type": "array"
+              },
+              "social_links": {
+                "items": {
+                  "type": "string"
+                },
+                "title": "Social Links",
+                "type": "array"
+              },
+              "reference_links": {
+                "items": {
+                  "$ref": "#/$defs/ReferenceLinkRecord"
+                },
+                "title": "Reference Links",
+                "type": "array"
+              },
+              "mailerlite_account_label": {
+                "anyOf": [
+                  {
+                    "type": "string"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ],
+                "default": null,
+                "title": "Mailerlite Account Label"
+              },
+              "mailerlite_group_ids": {
+                "items": {
+                  "type": "string"
+                },
+                "title": "Mailerlite Group Ids",
+                "type": "array"
+              },
+              "reference_article_project_id": {
+                "anyOf": [
+                  {
+                    "type": "string"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ],
+                "default": null,
+                "title": "Reference Article Project Id"
+              }
+            },
+            "required": [
+              "id"
+            ],
+            "title": "ProjectRecord",
+            "type": "object"
+          },
+          "ReferenceLinkRecord": {
+            "description": "One internal page the writer may link to. `description` = what the\npage is about / its target topic; the writer turns it into a natural,\nin-sentence anchor phrase (never the bare brand/domain).",
+            "properties": {
+              "url": {
+                "default": "",
+                "title": "Url",
+                "type": "string"
+              },
+              "description": {
+                "default": "",
+                "title": "Description",
+                "type": "string"
+              }
+            },
+            "title": "ReferenceLinkRecord",
+            "type": "object"
+          }
+        },
+        "properties": {
+          "projects": {
+            "items": {
+              "$ref": "#/$defs/ProjectRecord"
+            },
+            "title": "Projects",
+            "type": "array"
+          },
+          "count": {
+            "default": 0,
+            "title": "Count",
+            "type": "integer"
+          }
+        },
+        "title": "ProjectListResponse",
+        "type": "object"
+      },
+      "event": "",
+      "background": false,
+      "long_running": false,
+      "scopes": [],
+      "owner_chat_tool": "newsletter_writer"
+    },
+    {
+      "name": "update_project_context",
+      "description": "Update a newsletter project's context — any of: name, description, brand voice, goals, keywords, useful links, social links, MailerLite targeting label/group ids. Only send fields that changed. Use for: обнови проект рассылки, add keywords to newsletter project, update brand voice, set MailerLite targeting.",
+      "action_type": "write",
+      "chain_callable": true,
+      "effects": [
+        "update:project"
+      ],
+      "id_projection": "",
+      "params_schema": {
+        "properties": {
+          "project_id": {
+            "description": "Project ID from list_projects",
+            "title": "Project Id",
+            "type": "string"
+          },
+          "name": {
+            "anyOf": [
+              {
+                "maxLength": 255,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Name"
+          },
+          "description": {
+            "anyOf": [
+              {
+                "maxLength": 5000,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Description"
+          },
+          "brand_voice": {
+            "anyOf": [
+              {
+                "maxLength": 5000,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Brand Voice"
+          },
+          "goals": {
+            "anyOf": [
+              {
+                "maxLength": 2000,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Goals"
+          },
+          "keywords": {
+            "anyOf": [
+              {
+                "items": {
+                  "type": "string"
+                },
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Keywords"
+          },
+          "useful_links": {
+            "anyOf": [
+              {
+                "items": {
+                  "type": "string"
+                },
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Useful Links"
+          },
+          "social_links": {
+            "anyOf": [
+              {
+                "items": {
+                  "type": "string"
+                },
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Social Links"
+          },
+          "mailerlite_account_label": {
+            "anyOf": [
+              {
+                "maxLength": 255,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Mailerlite Account Label"
+          },
+          "mailerlite_group_ids": {
+            "anyOf": [
+              {
+                "items": {
+                  "type": "string"
+                },
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Mailerlite Group Ids"
+          },
+          "reference_article_project_id": {
+            "anyOf": [
+              {
+                "maxLength": 36,
+                "minLength": 36,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Reference Article Project Id"
+          }
+        },
+        "required": [
+          "project_id"
+        ],
+        "title": "UpdateProjectContextParams",
+        "type": "object"
+      },
+      "return_schema": {
+        "$defs": {
+          "ReferenceLinkRecord": {
+            "description": "One internal page the writer may link to. `description` = what the\npage is about / its target topic; the writer turns it into a natural,\nin-sentence anchor phrase (never the bare brand/domain).",
+            "properties": {
+              "url": {
+                "default": "",
+                "title": "Url",
+                "type": "string"
+              },
+              "description": {
+                "default": "",
+                "title": "Description",
+                "type": "string"
+              }
+            },
+            "title": "ReferenceLinkRecord",
+            "type": "object"
+          }
+        },
+        "properties": {
+          "id": {
+            "title": "Id",
+            "type": "string"
+          },
+          "name": {
+            "default": "",
+            "title": "Name",
+            "type": "string"
+          },
+          "description": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Description"
+          },
+          "brand_voice": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Brand Voice"
+          },
+          "goals": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Goals"
+          },
+          "keywords": {
+            "items": {
+              "type": "string"
+            },
+            "title": "Keywords",
+            "type": "array"
+          },
+          "useful_links": {
+            "items": {
+              "type": "string"
+            },
+            "title": "Useful Links",
+            "type": "array"
+          },
+          "social_links": {
+            "items": {
+              "type": "string"
+            },
+            "title": "Social Links",
+            "type": "array"
+          },
+          "reference_links": {
+            "items": {
+              "$ref": "#/$defs/ReferenceLinkRecord"
+            },
+            "title": "Reference Links",
+            "type": "array"
+          },
+          "mailerlite_account_label": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Mailerlite Account Label"
+          },
+          "mailerlite_group_ids": {
+            "items": {
+              "type": "string"
+            },
+            "title": "Mailerlite Group Ids",
+            "type": "array"
+          },
+          "reference_article_project_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Reference Article Project Id"
+          }
+        },
+        "required": [
+          "id"
+        ],
+        "title": "ProjectRecord",
+        "type": "object"
+      },
+      "event": "newsletter-writer.project.updated",
+      "background": false,
+      "long_running": false,
+      "scopes": [],
+      "owner_chat_tool": "newsletter_writer"
+    },
+    {
+      "name": "delete_project",
+      "description": "Permanently delete a newsletter project and ALL its newsletters, fill categories and fill items. Use for: удали проект рассылки, delete this newsletter project, remove newsletter site.",
+      "action_type": "destructive",
+      "chain_callable": true,
+      "effects": [
+        "delete:project"
+      ],
+      "id_projection": "",
+      "params_schema": {
+        "properties": {
+          "project_id": {
+            "description": "Project ID from list_projects",
+            "title": "Project Id",
+            "type": "string"
+          }
+        },
+        "required": [
+          "project_id"
+        ],
+        "title": "ProjectIdParams",
+        "type": "object"
+      },
+      "return_schema": {
+        "properties": {
+          "deleted": {
+            "default": true,
+            "title": "Deleted",
+            "type": "boolean"
+          },
+          "id": {
+            "default": "",
+            "title": "Id",
+            "type": "string"
+          }
+        },
+        "title": "DeletedResponse",
+        "type": "object"
+      },
+      "event": "newsletter-writer.project.deleted",
+      "background": false,
+      "long_running": false,
+      "scopes": [],
+      "owner_chat_tool": "newsletter_writer"
+    },
+    {
+      "name": "add_reference_link",
+      "description": "Add ONE internal page of THIS project's own site as a reference link the newsletter writer may link to, with a short description of what that page is about. The writer uses the description to weave a natural, in-sentence anchor. Use for: добавь ссылку для перелинковки в рассылке, add an internal link for the newsletter writer.",
+      "action_type": "write",
+      "chain_callable": true,
+      "effects": [
+        "update:project"
+      ],
+      "id_projection": "",
+      "params_schema": {
+        "properties": {
+          "project_id": {
+            "description": "Project ID from list_projects",
+            "title": "Project Id",
+            "type": "string"
+          },
+          "url": {
+            "description": "URL of an internal page on this project's own site",
+            "maxLength": 500,
+            "minLength": 1,
+            "title": "Url",
+            "type": "string"
+          },
+          "description": {
+            "description": "What that page is about / its topic",
+            "maxLength": 300,
+            "minLength": 1,
+            "title": "Description",
+            "type": "string"
+          }
+        },
+        "required": [
+          "project_id",
+          "url",
+          "description"
+        ],
+        "title": "AddReferenceLinkParams",
+        "type": "object"
+      },
+      "return_schema": {
+        "$defs": {
+          "ReferenceLinkRecord": {
+            "description": "One internal page the writer may link to. `description` = what the\npage is about / its target topic; the writer turns it into a natural,\nin-sentence anchor phrase (never the bare brand/domain).",
+            "properties": {
+              "url": {
+                "default": "",
+                "title": "Url",
+                "type": "string"
+              },
+              "description": {
+                "default": "",
+                "title": "Description",
+                "type": "string"
+              }
+            },
+            "title": "ReferenceLinkRecord",
+            "type": "object"
+          }
+        },
+        "properties": {
+          "project_id": {
+            "default": "",
+            "title": "Project Id",
+            "type": "string"
+          },
+          "links": {
+            "items": {
+              "$ref": "#/$defs/ReferenceLinkRecord"
+            },
+            "title": "Links",
+            "type": "array"
+          },
+          "count": {
+            "default": 0,
+            "title": "Count",
+            "type": "integer"
+          }
+        },
+        "title": "ReferenceLinksResponse",
+        "type": "object"
+      },
+      "event": "newsletter-writer.project.updated",
+      "background": false,
+      "long_running": false,
+      "scopes": [],
+      "owner_chat_tool": "newsletter_writer"
+    },
+    {
+      "name": "list_reference_links",
+      "description": "List the internal reference links saved on a newsletter project. Use for: покажи ссылки для перелинковки, list reference links, what internal links can the newsletter writer use.",
+      "action_type": "read",
+      "chain_callable": true,
+      "effects": [],
+      "id_projection": "",
+      "params_schema": {
+        "properties": {
+          "project_id": {
+            "description": "Project ID from list_projects",
+            "title": "Project Id",
+            "type": "string"
+          }
+        },
+        "required": [
+          "project_id"
+        ],
+        "title": "ProjectIdParams",
+        "type": "object"
+      },
+      "return_schema": {
+        "$defs": {
+          "ReferenceLinkRecord": {
+            "description": "One internal page the writer may link to. `description` = what the\npage is about / its target topic; the writer turns it into a natural,\nin-sentence anchor phrase (never the bare brand/domain).",
+            "properties": {
+              "url": {
+                "default": "",
+                "title": "Url",
+                "type": "string"
+              },
+              "description": {
+                "default": "",
+                "title": "Description",
+                "type": "string"
+              }
+            },
+            "title": "ReferenceLinkRecord",
+            "type": "object"
+          }
+        },
+        "properties": {
+          "project_id": {
+            "default": "",
+            "title": "Project Id",
+            "type": "string"
+          },
+          "links": {
+            "items": {
+              "$ref": "#/$defs/ReferenceLinkRecord"
+            },
+            "title": "Links",
+            "type": "array"
+          },
+          "count": {
+            "default": 0,
+            "title": "Count",
+            "type": "integer"
+          }
+        },
+        "title": "ReferenceLinksResponse",
+        "type": "object"
+      },
+      "event": "",
+      "background": false,
+      "long_running": false,
+      "scopes": [],
+      "owner_chat_tool": "newsletter_writer"
+    },
+    {
+      "name": "remove_reference_link",
+      "description": "Remove ONE internal reference link from a newsletter project by its URL. Use for: убери ссылку для перелинковки, remove a reference link.",
+      "action_type": "destructive",
+      "chain_callable": true,
+      "effects": [
+        "update:project"
+      ],
+      "id_projection": "",
+      "params_schema": {
+        "properties": {
+          "project_id": {
+            "description": "Project ID from list_projects",
+            "title": "Project Id",
+            "type": "string"
+          },
+          "url": {
+            "description": "URL to remove from the reference links",
+            "maxLength": 500,
+            "minLength": 1,
+            "title": "Url",
+            "type": "string"
+          }
+        },
+        "required": [
+          "project_id",
+          "url"
+        ],
+        "title": "RemoveReferenceLinkParams",
+        "type": "object"
+      },
+      "return_schema": {
+        "$defs": {
+          "ReferenceLinkRecord": {
+            "description": "One internal page the writer may link to. `description` = what the\npage is about / its target topic; the writer turns it into a natural,\nin-sentence anchor phrase (never the bare brand/domain).",
+            "properties": {
+              "url": {
+                "default": "",
+                "title": "Url",
+                "type": "string"
+              },
+              "description": {
+                "default": "",
+                "title": "Description",
+                "type": "string"
+              }
+            },
+            "title": "ReferenceLinkRecord",
+            "type": "object"
+          }
+        },
+        "properties": {
+          "project_id": {
+            "default": "",
+            "title": "Project Id",
+            "type": "string"
+          },
+          "links": {
+            "items": {
+              "$ref": "#/$defs/ReferenceLinkRecord"
+            },
+            "title": "Links",
+            "type": "array"
+          },
+          "count": {
+            "default": 0,
+            "title": "Count",
+            "type": "integer"
+          }
+        },
+        "title": "ReferenceLinksResponse",
+        "type": "object"
+      },
+      "event": "newsletter-writer.project.updated",
+      "background": false,
+      "long_running": false,
+      "scopes": [],
+      "owner_chat_tool": "newsletter_writer"
+    },
+    {
+      "name": "create_fill_category",
+      "description": "Add a named 'stock' category (e.g. promo codes, priority links, topics to cover) to a newsletter project. Capped per project — ask the user proactively which categories they want. Use for: добавь категорию для рассылки, create a fill category, add a promo-code slot.",
+      "action_type": "write",
+      "chain_callable": true,
+      "effects": [
+        "create:fill_category"
+      ],
+      "id_projection": "",
+      "params_schema": {
+        "properties": {
+          "project_id": {
+            "description": "Project ID from list_projects",
+            "title": "Project Id",
+            "type": "string"
+          },
+          "name": {
+            "description": "e.g. 'Promo codes', 'Priority links', 'Topics to cover'",
+            "maxLength": 100,
+            "minLength": 1,
+            "title": "Name",
+            "type": "string"
+          },
+          "category_type": {
+            "default": "custom",
+            "description": "One of: promo_code, link, topic, custom",
+            "title": "Category Type",
+            "type": "string"
+          },
+          "instructions": {
+            "anyOf": [
+              {
+                "maxLength": 500,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "description": "How/when the writer should use items from this category",
+            "title": "Instructions"
+          }
+        },
+        "required": [
+          "project_id",
+          "name"
+        ],
+        "title": "CreateFillCategoryParams",
+        "type": "object"
+      },
+      "return_schema": {
+        "properties": {
+          "id": {
+            "title": "Id",
+            "type": "string"
+          },
+          "project_id": {
+            "default": "",
+            "title": "Project Id",
+            "type": "string"
+          },
+          "name": {
+            "default": "",
+            "title": "Name",
+            "type": "string"
+          },
+          "category_type": {
+            "default": "custom",
+            "title": "Category Type",
+            "type": "string"
+          },
+          "instructions": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Instructions"
+          },
+          "order_index": {
+            "default": 0,
+            "title": "Order Index",
+            "type": "integer"
+          },
+          "item_count": {
+            "default": 0,
+            "title": "Item Count",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "id"
+        ],
+        "title": "FillCategoryRecord",
+        "type": "object"
+      },
+      "event": "newsletter-writer.project.updated",
+      "background": false,
+      "long_running": false,
+      "scopes": [],
+      "owner_chat_tool": "newsletter_writer"
+    },
+    {
+      "name": "list_fill_categories",
+      "description": "List the fill categories (promo codes, links, topics, etc.) on a newsletter project. Use for: покажи категории рассылки, list fill categories.",
+      "action_type": "read",
+      "chain_callable": true,
+      "effects": [],
+      "id_projection": "",
+      "params_schema": {
+        "properties": {
+          "project_id": {
+            "description": "Project ID from list_projects",
+            "title": "Project Id",
+            "type": "string"
+          }
+        },
+        "required": [
+          "project_id"
+        ],
+        "title": "ProjectIdParams",
+        "type": "object"
+      },
+      "return_schema": {
+        "$defs": {
+          "FillCategoryRecord": {
+            "properties": {
+              "id": {
+                "title": "Id",
+                "type": "string"
+              },
+              "project_id": {
+                "default": "",
+                "title": "Project Id",
+                "type": "string"
+              },
+              "name": {
+                "default": "",
+                "title": "Name",
+                "type": "string"
+              },
+              "category_type": {
+                "default": "custom",
+                "title": "Category Type",
+                "type": "string"
+              },
+              "instructions": {
+                "anyOf": [
+                  {
+                    "type": "string"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ],
+                "default": null,
+                "title": "Instructions"
+              },
+              "order_index": {
+                "default": 0,
+                "title": "Order Index",
+                "type": "integer"
+              },
+              "item_count": {
+                "default": 0,
+                "title": "Item Count",
+                "type": "integer"
+              }
+            },
+            "required": [
+              "id"
+            ],
+            "title": "FillCategoryRecord",
+            "type": "object"
+          }
+        },
+        "properties": {
+          "categories": {
+            "items": {
+              "$ref": "#/$defs/FillCategoryRecord"
+            },
+            "title": "Categories",
+            "type": "array"
+          },
+          "count": {
+            "default": 0,
+            "title": "Count",
+            "type": "integer"
+          }
+        },
+        "title": "FillCategoryListResponse",
+        "type": "object"
+      },
+      "event": "",
+      "background": false,
+      "long_running": false,
+      "scopes": [],
+      "owner_chat_tool": "newsletter_writer"
+    },
+    {
+      "name": "delete_fill_category",
+      "description": "Permanently delete a fill category and all its items. Use for: удали категорию рассылки, delete this fill category.",
+      "action_type": "destructive",
+      "chain_callable": true,
+      "effects": [
+        "delete:fill_category"
+      ],
+      "id_projection": "",
+      "params_schema": {
+        "properties": {
+          "project_id": {
+            "description": "Project ID from list_projects",
+            "title": "Project Id",
+            "type": "string"
+          },
+          "category_id": {
+            "description": "Fill category ID from list_fill_categories",
+            "title": "Category Id",
+            "type": "string"
+          }
+        },
+        "required": [
+          "project_id",
+          "category_id"
+        ],
+        "title": "FillCategoryIdParams",
+        "type": "object"
+      },
+      "return_schema": {
+        "properties": {
+          "deleted": {
+            "default": true,
+            "title": "Deleted",
+            "type": "boolean"
+          },
+          "id": {
+            "default": "",
+            "title": "Id",
+            "type": "string"
+          }
+        },
+        "title": "DeletedResponse",
+        "type": "object"
+      },
+      "event": "newsletter-writer.project.updated",
+      "background": false,
+      "long_running": false,
+      "scopes": [],
+      "owner_chat_tool": "newsletter_writer"
+    },
+    {
+      "name": "create_fill_item",
+      "description": "Add one value (a promo code, a specific link, a topic) to a fill category. The generation pipeline rotates through items least-used-first. Use for: добавь промокод, add an item to the category, add a value to fill category.",
+      "action_type": "write",
+      "chain_callable": true,
+      "effects": [
+        "create:fill_item"
+      ],
+      "id_projection": "",
+      "params_schema": {
+        "properties": {
+          "project_id": {
+            "description": "Project ID from list_projects",
+            "title": "Project Id",
+            "type": "string"
+          },
+          "category_id": {
+            "description": "Fill category ID from list_fill_categories",
+            "title": "Category Id",
+            "type": "string"
+          },
+          "value": {
+            "description": "The actual promo code / URL / topic text",
+            "maxLength": 1000,
+            "minLength": 1,
+            "title": "Value",
+            "type": "string"
+          },
+          "note": {
+            "anyOf": [
+              {
+                "maxLength": 500,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Note"
+          }
+        },
+        "required": [
+          "project_id",
+          "category_id",
+          "value"
+        ],
+        "title": "CreateFillItemParams",
+        "type": "object"
+      },
+      "return_schema": {
+        "properties": {
+          "id": {
+            "title": "Id",
+            "type": "string"
+          },
+          "category_id": {
+            "default": "",
+            "title": "Category Id",
+            "type": "string"
+          },
+          "value": {
+            "default": "",
+            "title": "Value",
+            "type": "string"
+          },
+          "note": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Note"
+          },
+          "is_active": {
+            "default": true,
+            "title": "Is Active",
+            "type": "boolean"
+          },
+          "times_used": {
+            "default": 0,
+            "title": "Times Used",
+            "type": "integer"
+          },
+          "last_used_at": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Last Used At"
+          }
+        },
+        "required": [
+          "id"
+        ],
+        "title": "FillItemRecord",
+        "type": "object"
+      },
+      "event": "newsletter-writer.project.updated",
+      "background": false,
+      "long_running": false,
+      "scopes": [],
+      "owner_chat_tool": "newsletter_writer"
+    },
+    {
+      "name": "list_fill_items",
+      "description": "List the items in a fill category, least-used-first. Use for: покажи элементы категории, list fill items.",
+      "action_type": "read",
+      "chain_callable": true,
+      "effects": [],
+      "id_projection": "",
+      "params_schema": {
+        "properties": {
+          "project_id": {
+            "description": "Project ID from list_projects",
+            "title": "Project Id",
+            "type": "string"
+          },
+          "category_id": {
+            "description": "Fill category ID from list_fill_categories",
+            "title": "Category Id",
+            "type": "string"
+          }
+        },
+        "required": [
+          "project_id",
+          "category_id"
+        ],
+        "title": "FillCategoryIdParams",
+        "type": "object"
+      },
+      "return_schema": {
+        "$defs": {
+          "FillItemRecord": {
+            "properties": {
+              "id": {
+                "title": "Id",
+                "type": "string"
+              },
+              "category_id": {
+                "default": "",
+                "title": "Category Id",
+                "type": "string"
+              },
+              "value": {
+                "default": "",
+                "title": "Value",
+                "type": "string"
+              },
+              "note": {
+                "anyOf": [
+                  {
+                    "type": "string"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ],
+                "default": null,
+                "title": "Note"
+              },
+              "is_active": {
+                "default": true,
+                "title": "Is Active",
+                "type": "boolean"
+              },
+              "times_used": {
+                "default": 0,
+                "title": "Times Used",
+                "type": "integer"
+              },
+              "last_used_at": {
+                "anyOf": [
+                  {
+                    "type": "string"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ],
+                "default": null,
+                "title": "Last Used At"
+              }
+            },
+            "required": [
+              "id"
+            ],
+            "title": "FillItemRecord",
+            "type": "object"
+          }
+        },
+        "properties": {
+          "items": {
+            "items": {
+              "$ref": "#/$defs/FillItemRecord"
+            },
+            "title": "Items",
+            "type": "array"
+          },
+          "count": {
+            "default": 0,
+            "title": "Count",
+            "type": "integer"
+          }
+        },
+        "title": "FillItemListResponse",
+        "type": "object"
+      },
+      "event": "",
+      "background": false,
+      "long_running": false,
+      "scopes": [],
+      "owner_chat_tool": "newsletter_writer"
+    },
+    {
+      "name": "update_fill_item",
+      "description": "Change a fill item's value/note, or retire it (is_active=false) without deleting its usage history — e.g. an expired promo code. Use for: обнови элемент категории, retire this promo code, deactivate fill item.",
+      "action_type": "write",
+      "chain_callable": true,
+      "effects": [
+        "update:fill_item"
+      ],
+      "id_projection": "",
+      "params_schema": {
+        "properties": {
+          "project_id": {
+            "description": "Project ID from list_projects",
+            "title": "Project Id",
+            "type": "string"
+          },
+          "category_id": {
+            "description": "Fill category ID from list_fill_categories",
+            "title": "Category Id",
+            "type": "string"
+          },
+          "item_id": {
+            "description": "Fill item ID from list_fill_items",
+            "title": "Item Id",
+            "type": "string"
+          },
+          "value": {
+            "anyOf": [
+              {
+                "maxLength": 1000,
+                "minLength": 1,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Value"
+          },
+          "note": {
+            "anyOf": [
+              {
+                "maxLength": 500,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Note"
+          },
+          "is_active": {
+            "anyOf": [
+              {
+                "type": "boolean"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "description": "Set false to retire it (e.g. an expired promo code)",
+            "title": "Is Active"
+          }
+        },
+        "required": [
+          "project_id",
+          "category_id",
+          "item_id"
+        ],
+        "title": "UpdateFillItemParams",
+        "type": "object"
+      },
+      "return_schema": {
+        "properties": {
+          "id": {
+            "title": "Id",
+            "type": "string"
+          },
+          "category_id": {
+            "default": "",
+            "title": "Category Id",
+            "type": "string"
+          },
+          "value": {
+            "default": "",
+            "title": "Value",
+            "type": "string"
+          },
+          "note": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Note"
+          },
+          "is_active": {
+            "default": true,
+            "title": "Is Active",
+            "type": "boolean"
+          },
+          "times_used": {
+            "default": 0,
+            "title": "Times Used",
+            "type": "integer"
+          },
+          "last_used_at": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Last Used At"
+          }
+        },
+        "required": [
+          "id"
+        ],
+        "title": "FillItemRecord",
+        "type": "object"
+      },
+      "event": "newsletter-writer.project.updated",
+      "background": false,
+      "long_running": false,
+      "scopes": [],
+      "owner_chat_tool": "newsletter_writer"
+    },
+    {
+      "name": "delete_fill_item",
+      "description": "Permanently delete one fill item. Use for: удали элемент категории, delete this fill item.",
+      "action_type": "destructive",
+      "chain_callable": true,
+      "effects": [
+        "delete:fill_item"
+      ],
+      "id_projection": "",
+      "params_schema": {
+        "properties": {
+          "project_id": {
+            "description": "Project ID from list_projects",
+            "title": "Project Id",
+            "type": "string"
+          },
+          "category_id": {
+            "description": "Fill category ID from list_fill_categories",
+            "title": "Category Id",
+            "type": "string"
+          },
+          "item_id": {
+            "description": "Fill item ID from list_fill_items",
+            "title": "Item Id",
+            "type": "string"
+          }
+        },
+        "required": [
+          "project_id",
+          "category_id",
+          "item_id"
+        ],
+        "title": "DeleteFillItemParams",
+        "type": "object"
+      },
+      "return_schema": {
+        "properties": {
+          "deleted": {
+            "default": true,
+            "title": "Deleted",
+            "type": "boolean"
+          },
+          "id": {
+            "default": "",
+            "title": "Id",
+            "type": "string"
+          }
+        },
+        "title": "DeletedResponse",
+        "type": "object"
+      },
+      "event": "newsletter-writer.project.updated",
+      "background": false,
+      "long_running": false,
+      "scopes": [],
+      "owner_chat_tool": "newsletter_writer"
+    },
+    {
+      "name": "create_newsletter",
+      "description": "Create a new newsletter shell under a project — just a placeholder, no content yet. Does not call any AI. Follow up with generate_newsletter to actually write it. Use for: создай рассылку, новая рассылка, add a newsletter idea, start a new email draft.",
+      "action_type": "write",
+      "chain_callable": true,
+      "effects": [
+        "create:newsletter"
+      ],
+      "id_projection": "",
+      "params_schema": {
+        "properties": {
+          "project_id": {
+            "description": "Project ID from list_projects",
+            "maxLength": 36,
+            "minLength": 36,
+            "title": "Project Id",
+            "type": "string"
+          },
+          "subject": {
+            "anyOf": [
+              {
+                "maxLength": 500,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Subject"
+          },
+          "brief_topic": {
+            "anyOf": [
+              {
+                "maxLength": 500,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Brief Topic"
+          }
+        },
+        "required": [
+          "project_id"
+        ],
+        "title": "CreateNewsletterParams",
+        "type": "object"
+      },
+      "return_schema": {
+        "description": "Metadata only — no sections/content field, by design (see module docstring).",
+        "properties": {
+          "id": {
+            "title": "Id",
+            "type": "string"
+          },
+          "project_id": {
+            "default": "",
+            "title": "Project Id",
+            "type": "string"
+          },
+          "subject": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Subject"
+          },
+          "preheader": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Preheader"
+          },
+          "status": {
+            "default": "idea",
+            "title": "Status",
+            "type": "string"
+          },
+          "word_count": {
+            "default": 0,
+            "title": "Word Count",
+            "type": "integer"
+          },
+          "model_used": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Model Used"
+          },
+          "quality_flags": {
+            "anyOf": [
+              {
+                "additionalProperties": true,
+                "type": "object"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Quality Flags"
+          },
+          "mailerlite_campaign_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Mailerlite Campaign Id"
+          },
+          "scheduled_at": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Scheduled At"
+          },
+          "sent_at": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Sent At"
+          }
+        },
+        "required": [
+          "id"
+        ],
+        "title": "NewsletterSummaryRecord",
+        "type": "object"
+      },
+      "event": "newsletter-writer.newsletter.created",
+      "background": false,
+      "long_running": false,
+      "scopes": [],
+      "owner_chat_tool": "newsletter_writer"
+    },
+    {
+      "name": "list_newsletters",
+      "description": "List newsletters (metadata only — id, subject, status, word count, quality flags — never the full body). Optionally filter by project or status. Use for: покажи рассылки, list newsletters, what's in review, show idea/writing/review/scheduled/sent newsletters.",
+      "action_type": "read",
+      "chain_callable": true,
+      "effects": [],
+      "id_projection": "",
+      "params_schema": {
+        "properties": {
+          "project_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "description": "Filter by project",
+            "title": "Project Id"
+          },
+          "status": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "description": "idea | writing | review | scheduled | sent",
+            "title": "Status"
+          }
+        },
+        "title": "ListNewslettersParams",
+        "type": "object"
+      },
+      "return_schema": {
+        "$defs": {
+          "NewsletterSummaryRecord": {
+            "description": "Metadata only — no sections/content field, by design (see module docstring).",
+            "properties": {
+              "id": {
+                "title": "Id",
+                "type": "string"
+              },
+              "project_id": {
+                "default": "",
+                "title": "Project Id",
+                "type": "string"
+              },
+              "subject": {
+                "anyOf": [
+                  {
+                    "type": "string"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ],
+                "default": null,
+                "title": "Subject"
+              },
+              "preheader": {
+                "anyOf": [
+                  {
+                    "type": "string"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ],
+                "default": null,
+                "title": "Preheader"
+              },
+              "status": {
+                "default": "idea",
+                "title": "Status",
+                "type": "string"
+              },
+              "word_count": {
+                "default": 0,
+                "title": "Word Count",
+                "type": "integer"
+              },
+              "model_used": {
+                "anyOf": [
+                  {
+                    "type": "string"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ],
+                "default": null,
+                "title": "Model Used"
+              },
+              "quality_flags": {
+                "anyOf": [
+                  {
+                    "additionalProperties": true,
+                    "type": "object"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ],
+                "default": null,
+                "title": "Quality Flags"
+              },
+              "mailerlite_campaign_id": {
+                "anyOf": [
+                  {
+                    "type": "string"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ],
+                "default": null,
+                "title": "Mailerlite Campaign Id"
+              },
+              "scheduled_at": {
+                "anyOf": [
+                  {
+                    "type": "string"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ],
+                "default": null,
+                "title": "Scheduled At"
+              },
+              "sent_at": {
+                "anyOf": [
+                  {
+                    "type": "string"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ],
+                "default": null,
+                "title": "Sent At"
+              }
+            },
+            "required": [
+              "id"
+            ],
+            "title": "NewsletterSummaryRecord",
+            "type": "object"
+          }
+        },
+        "properties": {
+          "newsletters": {
+            "items": {
+              "$ref": "#/$defs/NewsletterSummaryRecord"
+            },
+            "title": "Newsletters",
+            "type": "array"
+          },
+          "count": {
+            "default": 0,
+            "title": "Count",
+            "type": "integer"
+          }
+        },
+        "title": "NewsletterListResponse",
+        "type": "object"
+      },
+      "event": "",
+      "background": false,
+      "long_running": false,
+      "scopes": [],
+      "owner_chat_tool": "newsletter_writer"
+    },
+    {
+      "name": "update_newsletter_status",
+      "description": "Move a newsletter to a new status: idea, writing, review, scheduled, sent. Use for: отправь в ревью, пометь как готово, move this newsletter to review/scheduled.",
+      "action_type": "write",
+      "chain_callable": true,
+      "effects": [
+        "update:newsletter"
+      ],
+      "id_projection": "",
+      "params_schema": {
+        "properties": {
+          "newsletter_id": {
+            "description": "Newsletter ID from list_newsletters",
+            "title": "Newsletter Id",
+            "type": "string"
+          },
+          "status": {
+            "description": "One of: idea, writing, review, scheduled, sent",
+            "title": "Status",
+            "type": "string"
+          }
+        },
+        "required": [
+          "newsletter_id",
+          "status"
+        ],
+        "title": "UpdateNewsletterStatusParams",
+        "type": "object"
+      },
+      "return_schema": {
+        "description": "Metadata only — no sections/content field, by design (see module docstring).",
+        "properties": {
+          "id": {
+            "title": "Id",
+            "type": "string"
+          },
+          "project_id": {
+            "default": "",
+            "title": "Project Id",
+            "type": "string"
+          },
+          "subject": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Subject"
+          },
+          "preheader": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Preheader"
+          },
+          "status": {
+            "default": "idea",
+            "title": "Status",
+            "type": "string"
+          },
+          "word_count": {
+            "default": 0,
+            "title": "Word Count",
+            "type": "integer"
+          },
+          "model_used": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Model Used"
+          },
+          "quality_flags": {
+            "anyOf": [
+              {
+                "additionalProperties": true,
+                "type": "object"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Quality Flags"
+          },
+          "mailerlite_campaign_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Mailerlite Campaign Id"
+          },
+          "scheduled_at": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Scheduled At"
+          },
+          "sent_at": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Sent At"
+          }
+        },
+        "required": [
+          "id"
+        ],
+        "title": "NewsletterSummaryRecord",
+        "type": "object"
+      },
+      "event": "newsletter-writer.newsletter.updated",
+      "background": false,
+      "long_running": false,
+      "scopes": [],
+      "owner_chat_tool": "newsletter_writer"
+    },
+    {
+      "name": "update_newsletter_meta",
+      "description": "Fix a newsletter's subject and/or preheader without touching the body. Use for: поменяй тему письма, обнови прехедер, change the subject line.",
+      "action_type": "write",
+      "chain_callable": true,
+      "effects": [
+        "update:newsletter"
+      ],
+      "id_projection": "",
+      "params_schema": {
+        "properties": {
+          "newsletter_id": {
+            "description": "Newsletter ID from list_newsletters",
+            "title": "Newsletter Id",
+            "type": "string"
+          },
+          "subject": {
+            "anyOf": [
+              {
+                "maxLength": 500,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Subject"
+          },
+          "preheader": {
+            "anyOf": [
+              {
+                "maxLength": 200,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Preheader"
+          }
+        },
+        "required": [
+          "newsletter_id"
+        ],
+        "title": "UpdateNewsletterMetaParams",
+        "type": "object"
+      },
+      "return_schema": {
+        "description": "Metadata only — no sections/content field, by design (see module docstring).",
+        "properties": {
+          "id": {
+            "title": "Id",
+            "type": "string"
+          },
+          "project_id": {
+            "default": "",
+            "title": "Project Id",
+            "type": "string"
+          },
+          "subject": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Subject"
+          },
+          "preheader": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Preheader"
+          },
+          "status": {
+            "default": "idea",
+            "title": "Status",
+            "type": "string"
+          },
+          "word_count": {
+            "default": 0,
+            "title": "Word Count",
+            "type": "integer"
+          },
+          "model_used": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Model Used"
+          },
+          "quality_flags": {
+            "anyOf": [
+              {
+                "additionalProperties": true,
+                "type": "object"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Quality Flags"
+          },
+          "mailerlite_campaign_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Mailerlite Campaign Id"
+          },
+          "scheduled_at": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Scheduled At"
+          },
+          "sent_at": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Sent At"
+          }
+        },
+        "required": [
+          "id"
+        ],
+        "title": "NewsletterSummaryRecord",
+        "type": "object"
+      },
+      "event": "newsletter-writer.newsletter.updated",
+      "background": false,
+      "long_running": false,
+      "scopes": [],
+      "owner_chat_tool": "newsletter_writer"
+    },
+    {
+      "name": "update_newsletter_section",
+      "description": "PANEL-ONLY: directly overwrite one block's fields with EXACT values — a raw manual save, NOT an AI writing step (it skips the judge entirely). Not for chat use — Webbee should use generate_newsletter or patch_newsletter to write content.",
+      "action_type": "write",
+      "chain_callable": true,
+      "effects": [
+        "update:newsletter"
+      ],
+      "id_projection": "",
+      "params_schema": {
+        "description": "PANEL-ONLY manual block overwrite — not an AI writing step. Mirrors\nArticle Writer's SaveArticleSectionParams.",
+        "properties": {
+          "newsletter_id": {
+            "title": "Newsletter Id",
+            "type": "string"
+          },
+          "order_index": {
+            "minimum": 0,
+            "title": "Order Index",
+            "type": "integer"
+          },
+          "block_type": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "description": "One of: text, button, image, divider",
+            "title": "Block Type"
+          },
+          "heading": {
+            "anyOf": [
+              {
+                "maxLength": 500,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Heading"
+          },
+          "content": {
+            "anyOf": [
+              {
+                "maxLength": 200000,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Content"
+          },
+          "button_url": {
+            "anyOf": [
+              {
+                "maxLength": 2000,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Button Url"
+          },
+          "button_label": {
+            "anyOf": [
+              {
+                "maxLength": 100,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Button Label"
+          },
+          "image_url": {
+            "anyOf": [
+              {
+                "maxLength": 2000,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Image Url"
+          },
+          "image_alt": {
+            "anyOf": [
+              {
+                "maxLength": 300,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Image Alt"
+          }
+        },
+        "required": [
+          "newsletter_id",
+          "order_index"
+        ],
+        "title": "UpdateNewsletterSectionParams",
+        "type": "object"
+      },
+      "return_schema": {
+        "properties": {
+          "deleted": {
+            "default": true,
+            "title": "Deleted",
+            "type": "boolean"
+          },
+          "id": {
+            "default": "",
+            "title": "Id",
+            "type": "string"
+          }
+        },
+        "title": "DeletedResponse",
+        "type": "object"
+      },
+      "event": "newsletter-writer.newsletter.section_saved",
+      "background": false,
+      "long_running": false,
+      "scopes": [],
+      "owner_chat_tool": "newsletter_writer"
+    },
+    {
+      "name": "delete_newsletter",
+      "description": "Permanently delete a newsletter. Use for: удали рассылку, delete this newsletter.",
+      "action_type": "destructive",
+      "chain_callable": true,
+      "effects": [
+        "delete:newsletter"
+      ],
+      "id_projection": "",
+      "params_schema": {
+        "properties": {
+          "newsletter_id": {
+            "description": "Newsletter ID from list_newsletters",
+            "title": "Newsletter Id",
+            "type": "string"
+          }
+        },
+        "required": [
+          "newsletter_id"
+        ],
+        "title": "NewsletterIdParams",
+        "type": "object"
+      },
+      "return_schema": {
+        "properties": {
+          "deleted": {
+            "default": true,
+            "title": "Deleted",
+            "type": "boolean"
+          },
+          "id": {
+            "default": "",
+            "title": "Id",
+            "type": "string"
+          }
+        },
+        "title": "DeletedResponse",
+        "type": "object"
+      },
+      "event": "newsletter-writer.newsletter.deleted",
+      "background": false,
+      "long_running": false,
+      "scopes": [],
+      "owner_chat_tool": "newsletter_writer"
+    },
+    {
+      "name": "generate_newsletter",
+      "description": "Start writing a newsletter's first draft using the project's context (brand voice, goals, fill categories) plus a topic/goal brief and any real source facts (from web search or other extensions, e.g. an Article Writer article or Matomo/GSC data) the draft's claims must be grounded in. Runs in the background — call check_newsletter_generation_status with the returned job_id to see when it's done (status lands on 'review'). Use for: напиши рассылку, сгенерируй письмо, write the newsletter, draft this email.",
+      "action_type": "write",
+      "chain_callable": true,
+      "effects": [
+        "update:newsletter"
+      ],
+      "id_projection": "",
+      "params_schema": {
+        "$defs": {
+          "FillSelectionParam": {
+            "properties": {
+              "category_id": {
+                "maxLength": 36,
+                "minLength": 36,
+                "title": "Category Id",
+                "type": "string"
+              },
+              "item_ids": {
+                "items": {
+                  "type": "string"
+                },
+                "maxItems": 20,
+                "title": "Item Ids",
+                "type": "array"
+              }
+            },
+            "required": [
+              "category_id"
+            ],
+            "title": "FillSelectionParam",
+            "type": "object"
+          }
+        },
+        "properties": {
+          "newsletter_id": {
+            "description": "Newsletter ID from create_newsletter",
+            "title": "Newsletter Id",
+            "type": "string"
+          },
+          "topic": {
+            "description": "What this newsletter should cover",
+            "maxLength": 1000,
+            "minLength": 1,
+            "title": "Topic",
+            "type": "string"
+          },
+          "goal": {
+            "anyOf": [
+              {
+                "maxLength": 500,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Goal"
+          },
+          "audience_hint": {
+            "anyOf": [
+              {
+                "maxLength": 500,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Audience Hint"
+          },
+          "tone_override": {
+            "anyOf": [
+              {
+                "maxLength": 500,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Tone Override"
+          },
+          "target_word_count": {
+            "default": 300,
+            "maximum": 1200,
+            "minimum": 80,
+            "title": "Target Word Count",
+            "type": "integer"
+          },
+          "fill_selections": {
+            "items": {
+              "$ref": "#/$defs/FillSelectionParam"
+            },
+            "maxItems": 6,
+            "title": "Fill Selections",
+            "type": "array"
+          },
+          "source_snippets": {
+            "description": "Real facts/data (from web search or other extensions) the draft's claims must be grounded in",
+            "items": {
+              "type": "string"
+            },
+            "maxItems": 50,
+            "title": "Source Snippets",
+            "type": "array"
+          }
+        },
+        "required": [
+          "newsletter_id",
+          "topic"
+        ],
+        "title": "GenerateNewsletterParams",
+        "type": "object"
+      },
+      "return_schema": {
+        "properties": {
+          "job_id": {
+            "default": "",
+            "title": "Job Id",
+            "type": "string"
+          },
+          "newsletter_id": {
+            "default": "",
+            "title": "Newsletter Id",
+            "type": "string"
+          },
+          "status": {
+            "default": "queued",
+            "title": "Status",
+            "type": "string"
+          }
+        },
+        "title": "GenerationJobResponse",
+        "type": "object"
+      },
+      "event": "newsletter-writer.newsletter.generation_started",
+      "background": false,
+      "long_running": false,
+      "scopes": [],
+      "owner_chat_tool": "newsletter_writer"
+    },
+    {
+      "name": "check_newsletter_generation_status",
+      "description": "Check progress of a generate_newsletter job — status, model used, cost. Use for: готова ли рассылка, статус генерации, is the newsletter ready, check generation progress.",
+      "action_type": "read",
+      "chain_callable": true,
+      "effects": [],
+      "id_projection": "",
+      "params_schema": {
+        "properties": {
+          "newsletter_id": {
+            "description": "Newsletter ID from list_newsletters",
+            "title": "Newsletter Id",
+            "type": "string"
+          },
+          "job_id": {
+            "description": "Job ID returned by generate_newsletter",
+            "title": "Job Id",
+            "type": "string"
+          }
+        },
+        "required": [
+          "newsletter_id",
+          "job_id"
+        ],
+        "title": "GenerationJobStatusParams",
+        "type": "object"
+      },
+      "return_schema": {
+        "properties": {
+          "id": {
+            "title": "Id",
+            "type": "string"
+          },
+          "newsletter_id": {
+            "default": "",
+            "title": "Newsletter Id",
+            "type": "string"
+          },
+          "kind": {
+            "default": "",
+            "title": "Kind",
+            "type": "string"
+          },
+          "status": {
+            "default": "",
+            "title": "Status",
+            "type": "string"
+          },
+          "model": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Model"
+          },
+          "tokens_used": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Tokens Used"
+          },
+          "cost_estimate": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Cost Estimate"
+          },
+          "error": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Error"
+          }
+        },
+        "required": [
+          "id"
+        ],
+        "title": "GenerationStatusResponse",
+        "type": "object"
+      },
+      "event": "",
+      "background": false,
+      "long_running": false,
+      "scopes": [],
+      "owner_chat_tool": "newsletter_writer"
+    },
+    {
+      "name": "patch_newsletter",
+      "description": "Rewrite ONE block of a newsletter by natural-language instruction (e.g. 'rewrite the block about the promo to be more urgent', 'shorten the intro'). Locates the block automatically (heading/keyword match) and returns a short preview — never the full body. Use for: перепиши блок про промокод, shorten this newsletter's intro, make the CTA punchier.",
+      "action_type": "write",
+      "chain_callable": true,
+      "effects": [
+        "update:newsletter"
+      ],
+      "id_projection": "",
+      "params_schema": {
+        "properties": {
+          "newsletter_id": {
+            "description": "Newsletter ID from list_newsletters",
+            "title": "Newsletter Id",
+            "type": "string"
+          },
+          "instruction": {
+            "description": "e.g. 'rewrite the block about the promo to be more urgent'",
+            "maxLength": 1000,
+            "minLength": 1,
+            "title": "Instruction",
+            "type": "string"
+          },
+          "section_hint": {
+            "anyOf": [
+              {
+                "maxLength": 500,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Section Hint"
+          }
+        },
+        "required": [
+          "newsletter_id",
+          "instruction"
+        ],
+        "title": "PatchNewsletterParams",
+        "type": "object"
+      },
+      "return_schema": {
+        "properties": {
+          "order_index": {
+            "default": 0,
+            "title": "Order Index",
+            "type": "integer"
+          },
+          "heading": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Heading"
+          },
+          "preview": {
+            "default": "",
+            "title": "Preview",
+            "type": "string"
+          }
+        },
+        "title": "PatchResult",
+        "type": "object"
+      },
+      "event": "newsletter-writer.newsletter.patched",
+      "background": false,
+      "long_running": false,
+      "scopes": [],
+      "owner_chat_tool": "newsletter_writer"
+    }
+  ],
+  "signals": [],
+  "schedules": [],
+  "required_scopes": [],
+  "icon_size_bytes": 267,
+  "lifecycle": {
+    "health_check": {
+      "interval_sec": 60
+    }
+  },
+  "secrets": [
+    {
+      "name": "backend_jwt",
+      "description": "Platform JWT authenticating this extension to the newsletter-writer-api backend microservice. Developer-managed only — never entered or seen by end users.",
+      "required": true,
+      "write_mode": "user",
+      "max_bytes": 2048,
+      "scope": "app",
+      "env_fallback": "IMPERAL_APPSECRET_NEWSLETTER_WRITER_BACKEND_JWT"
+    }
+  ],
+  "panels": [
+    {
+      "panel_id": "secrets",
+      "slot": "right",
+      "title": "Secrets",
+      "tree": {}
+    },
+    {
+      "panel_id": "sidebar",
+      "slot": "left",
+      "title": "Newsletter Writer",
+      "tree": {}
+    },
+    {
+      "panel_id": "workspace",
+      "slot": "center",
+      "title": "Newsletter Writer",
+      "tree": {}
+    }
+  ]
+}
