@@ -11,7 +11,7 @@ from imperal_sdk import ui
 from imperal_sdk.types import ActionResult
 
 from app import chat
-from api_client import call_backend
+from api_client import call_backend, _err
 from params import (
     CreateFillCategoryParams, FillCategoryIdParams, ProjectIdParams,
     CreateFillItemParams, UpdateFillItemParams, DeleteFillItemParams,
@@ -20,10 +20,6 @@ from response_models import (
     DeletedResponse, FillCategoryRecord, FillCategoryListResponse,
     FillItemRecord, FillItemListResponse,
 )
-
-
-def _err(data: dict) -> ActionResult:
-    return ActionResult.error(error=data.get("error", "unknown error"))
 
 
 # ── Fill categories / items — the project's rotating "stock" ───────────────
@@ -189,7 +185,9 @@ async def fn_update_fill_item(ctx, params: UpdateFillItemParams) -> ActionResult
     """Change a fill item's value/note, or retire it (is_active=false) in place."""
     fields = params.model_dump(exclude_none=True, exclude={"project_id", "category_id", "item_id"})
     if not fields:
-        return ActionResult.error(error="Nothing to update — provide at least one field.")
+        return ActionResult.error(
+            error="Nothing to update — provide at least one field.", code="VALIDATION_MISSING_FIELD",
+        )
     data = await call_backend(
         ctx, "PATCH",
         f"/v1/projects/{params.project_id}/fill-categories/{params.category_id}/items/{params.item_id}",

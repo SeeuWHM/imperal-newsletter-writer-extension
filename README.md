@@ -95,7 +95,7 @@ Newsletter text lives in this extension's own backend + database — not in `ctx
 | `edit_full_newsletter` | write | Replace the entire newsletter with an edited Markdown version, verbatim |
 | `delete_newsletter` | destructive | Permanently delete a newsletter |
 | `generate_newsletter` | write | Start the background generation pipeline: outline → draft → gates → judge |
-| `check_newsletter_generation_status` | read | Poll a generation job — status, model used, cost estimate |
+| `check_generation_status` | read | Poll a generation job — status, model used, cost estimate |
 | `patch_newsletter` | write | Rewrite one block by natural-language instruction; returns a short preview |
 
 ---

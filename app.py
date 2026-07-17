@@ -49,7 +49,7 @@ SERVER_URL = os.environ.get("NEWSLETTER_WRITER_BACKEND_URL", "") or "https://api
 
 ext = Extension(
     "imperal-newsletter-writer-extension",
-    version="1.4.0",
+    version="1.5.0",
     display_name="Newsletter Writer",
     description=(
         "Project-based email newsletter writing: keep per-project context (brand voice, goals, "
@@ -88,7 +88,10 @@ chat = ChatExtension(
         "accurately and never broadens a promise or invents an offer. "
         "EDITING: read the full text with read_full_newsletter and rewrite it with "
         "edit_full_newsletter (resend the complete text, changing only what's asked); for a small "
-        "targeted change use patch_newsletter. The panel is another place the full text is edited."
+        "targeted change use patch_newsletter; to hand the newsletter to another app (MailerLite, "
+        "Mail, Notes) use export_newsletter_text — never read_full_newsletter's raw Markdown, "
+        "which shows up as literal '**'/'##' characters instead of formatting. The panel is "
+        "another place the full text is edited."
     ),
     max_rounds=10,
 )

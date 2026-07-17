@@ -126,7 +126,14 @@ class GenerationStatusResponse(BaseModel):
 
 
 class PatchResult(BaseModel):
-    order_index: int = 0
+    """matched/replaced_count are honesty evidence: when the locate step
+    can't find a block containing the instruction's target, matched=False
+    and replaced_count=0 — nothing gets edited (mirrors Article Writer's
+    2026-07-17 fix)."""
+
+    matched: bool = True
+    replaced_count: int = 0
+    order_index: Optional[int] = None
     heading: Optional[str] = None
     preview: str = ""
 
@@ -141,3 +148,23 @@ class NewsletterTextRecord(BaseModel):
     status: str = "idea"
     word_count: int = 0
     markdown: str = ""
+
+
+class NewsletterFullText(BaseModel):
+    """The one deliberate exception to 'never return body to chat' for a
+    cross-tool HANDOFF (send it by email, save it to MailerLite/Notes, paste
+    it elsewhere) — mirrors Article Writer's ArticleFullText exactly, same
+    reasoning and same both-fields-always-populated rule.
+
+    BOTH `text` and `html` are populated — `html` is real markup
+    (<h2>/<strong>/<ul>) for MailerLite/Mail/Notes (is_html=true); `text` is
+    a plain fallback. Without a real HTML export, Webbee's only path to hand
+    a newsletter to another tool was read_full_newsletter's raw Markdown —
+    which is why sent newsletters were showing up with literal `**bold**`/
+    `##` syntax instead of formatting (2026-07-17 report)."""
+
+    id: str
+    subject: Optional[str] = None
+    preheader: Optional[str] = None
+    text: str
+    html: str

@@ -78,7 +78,7 @@ newsletter-writer-extension/
 ├── handlers_projects.py  — project CRUD + reference links
 ├── handlers_fill.py      — fill categories + fill items (the domain-data store; note = conditions)
 ├── handlers_newsletters.py — newsletter CRUD, status/meta, section/full save (panel), read_full, edit_full
-├── handlers_generate.py  — generate_newsletter, check_newsletter_generation_status, patch_newsletter
+├── handlers_generate.py  — generate_newsletter, check_generation_status, patch_newsletter
 ├── panels_side.py        — LEFT "sidebar": active project + project switcher
 ├── panels_workspace.py   — CENTER "workspace": newsletter board + single-editor view (H1 subject)
 └── tests/  test_handlers.py · test_newsletters.py · test_richtext.py · test_skeleton.py   (54 tests, green)
@@ -112,7 +112,7 @@ Every file < 300 lines.
 
 ### Generation (`handlers_generate.py`)
 - `generate_newsletter(newsletter_id, topic, goal?, audience_hint?, tone_override?, target_word_count?, fill_selections?, source_snippets?)` — enqueues async pipeline → `{job_id,…}`
-- `check_newsletter_generation_status(newsletter_id, job_id)` — read
+- `check_generation_status(newsletter_id, job_id)` — read
 - `patch_newsletter(newsletter_id, instruction, section_hint?)` — one-section NL rewrite, returns a preview
 
 ### Skeleton (`skeleton.py`)

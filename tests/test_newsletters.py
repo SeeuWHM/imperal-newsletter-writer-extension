@@ -185,6 +185,31 @@ async def test_read_full_newsletter_returns_markdown(monkeypatch):
 
 
 @pytest.mark.asyncio
+async def test_export_newsletter_text_returns_html_not_markdown(monkeypatch):
+    """2026-07-17 report: a sent newsletter showed literal '**bold**'/'##'
+    syntax — export_newsletter_text must return real HTML, no Markdown."""
+    async def fake_call(ctx, method, path, **kw):
+        assert method == "GET" and path == "/v1/newsletters/n1"
+        return {
+            "id": "n1", "subject": "Spring Sale", "preheader": "Save big", "word_count": 4,
+            "sections": [
+                {"heading": "Intro", "content": "First **bit**."},
+                {"heading": "CTA", "content": "Last bit."},
+            ],
+        }
+
+    monkeypatch.setattr(handlers_newsletters, "call_backend", fake_call)
+    result = await handlers_newsletters.fn_export_newsletter_text(_ctx(), NewsletterIdParams(newsletter_id="n1"))
+    assert result.status == "success"
+    assert result.data.subject == "Spring Sale"
+    assert result.data.html == (
+        "<h2>Intro</h2><p>First <strong>bit</strong>.</p><h2>CTA</h2><p>Last bit.</p>"
+    )
+    assert "**" not in result.data.html
+    assert "First" in result.data.text and "**" not in result.data.text
+
+
+@pytest.mark.asyncio
 async def test_edit_full_newsletter_persists_subject_and_body(monkeypatch):
     captured = {}
 

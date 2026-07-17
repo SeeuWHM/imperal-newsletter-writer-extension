@@ -16,7 +16,7 @@ from imperal_sdk import ui
 from imperal_sdk.types import ActionResult
 
 from app import chat
-from api_client import call_backend
+from api_client import call_backend, _err
 from params import (
     CreateNewsletterParams, ListNewslettersParams, NewsletterIdParams,
     UpdateNewsletterStatusParams, UpdateNewsletterMetaParams, UpdateNewsletterSectionParams,
@@ -24,12 +24,11 @@ from params import (
 )
 from response_models import (
     NewsletterSummaryRecord, NewsletterListResponse, DeletedResponse, NewsletterTextRecord,
+    NewsletterFullText,
 )
-from richtext import html_to_document, document_to_markdown, markdown_to_document
-
-
-def _err(data: dict) -> ActionResult:
-    return ActionResult.error(error=data.get("error", "unknown error"))
+from richtext import (
+    html_to_document, document_to_markdown, markdown_to_document, sections_to_html, to_export_text,
+)
 
 
 def _to_summary(n: dict) -> NewsletterSummaryRecord:
@@ -137,7 +136,9 @@ async def fn_update_newsletter_meta(ctx, params: UpdateNewsletterMetaParams) -> 
     """Fix subject/preheader without touching block content."""
     body = params.model_dump(exclude_none=True, exclude={"newsletter_id"})
     if not body:
-        return ActionResult.error(error="Nothing to update — provide subject and/or preheader.")
+        return ActionResult.error(
+            error="Nothing to update — provide subject and/or preheader.", code="VALIDATION_MISSING_FIELD",
+        )
     data = await call_backend(ctx, "PATCH", f"/v1/newsletters/{params.newsletter_id}/meta", json=body)
     if "error" in data:
         return _err(data)
@@ -161,7 +162,9 @@ async def fn_update_newsletter_section(ctx, params: UpdateNewsletterSectionParam
     """Overwrite one block's fields verbatim — no AI involved."""
     fields = params.model_dump(exclude_none=True, exclude={"newsletter_id", "order_index"})
     if not fields:
-        return ActionResult.error(error="Nothing to save — provide at least one field.")
+        return ActionResult.error(
+            error="Nothing to save — provide at least one field.", code="VALIDATION_MISSING_FIELD",
+        )
     data = await call_backend(
         ctx, "PATCH", f"/v1/newsletters/{params.newsletter_id}/sections/{params.order_index}", json=fields,
     )
@@ -215,8 +218,10 @@ async def fn_save_full_newsletter(ctx, params: SaveFullNewsletterParams) -> Acti
     description=(
         "Read the ENTIRE newsletter body as editable Markdown (# subject, ## section headings, "
         "body in light markdown). Returns the full text to chat on purpose — call this before "
-        "editing so you work from the real current text, never from memory. Use for: покажи "
-        "полный текст письма, дай отредактировать, read the whole newsletter."
+        "editing so you work from the real current text, never from memory. (To hand a newsletter "
+        "to another app like MailerLite/Mail/Notes, use export_newsletter_text instead — sending "
+        "raw Markdown produces literal '**'/'##' characters in the recipient's inbox.) Use for: "
+        "покажи полный текст письма, дай отредактировать, read the whole newsletter."
     ),
     action_type="read",
     data_model=NewsletterTextRecord,
@@ -232,6 +237,33 @@ async def fn_read_full_newsletter(ctx, params: NewsletterIdParams) -> ActionResu
         status=data.get("status", "idea"), word_count=data.get("word_count", 0), markdown=md,
     )
     return ActionResult.success(data=result, summary=f"Full newsletter text ({result.word_count} words).")
+
+
+@chat.function(
+    "export_newsletter_text",
+    description=(
+        "Get the FULL newsletter body — both as HTML (`html`: <h2>/<strong>/<ul> markup, no "
+        "literal Markdown syntax) and plain text (`text`) — so it can be handed to another "
+        "extension: MailerLite (create/update a campaign), Mail's send()/reply() (is_html=true), "
+        "or Notes. ONLY call this when the user explicitly asks to send/export/copy the newsletter "
+        "somewhere. Never call this for routine status checks or listing — use list_newsletters / "
+        "check_generation_status for those, which stay cheap on purpose."
+    ),
+    action_type="read",
+    data_model=NewsletterFullText,
+)
+async def fn_export_newsletter_text(ctx, params: NewsletterIdParams) -> ActionResult:
+    """The one deliberate exception to 'never return body to chat' — explicit export only."""
+    data = await call_backend(ctx, "GET", f"/v1/newsletters/{params.newsletter_id}")
+    if "error" in data:
+        return _err(data)
+    sections = data.get("sections") or []
+    result = NewsletterFullText(
+        id=data.get("id", params.newsletter_id), subject=data.get("subject"),
+        preheader=data.get("preheader"),
+        text=to_export_text(sections), html=sections_to_html(sections),
+    )
+    return ActionResult.success(data=result, summary=f"Exported {data.get('word_count', 0)} word(s).")
 
 
 @chat.function(
@@ -252,7 +284,9 @@ async def fn_edit_full_newsletter(ctx, params: EditFullNewsletterParams) -> Acti
     """Webbee's full-text edit — split submitted Markdown into subject + sections, store verbatim."""
     subject, sections = markdown_to_document(params.content_markdown)
     if not sections:
-        return ActionResult.error(error="Nothing to save — the submitted text is empty.")
+        return ActionResult.error(
+            error="Nothing to save — the submitted text is empty.", code="VALIDATION_MISSING_FIELD",
+        )
     data = await call_backend(
         ctx, "PUT", f"/v1/newsletters/{params.newsletter_id}/sections", json={"sections": sections},
     )

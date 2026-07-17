@@ -1,9 +1,9 @@
 [project]
 name = "newsletter-writer"
-version = "1.0.0"
+version = "1.5.0"
 description = "Newsletter Writer — project-based email newsletter writing: per-brand context, AI generation with grounded self-review, panel-only editing"
 requires-python = ">=3.11"
-dependencies = ["imperal-sdk>=5.0.1"]
+dependencies = ["imperal-sdk>=5.9.9"]
 
 [project.optional-dependencies]
 dev = ["pytest>=8.0", "pytest-asyncio>=0.23"]

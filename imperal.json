@@ -1,8 +1,8 @@
 {
   "manifest_schema_version": 3,
-  "sdk_version": "5.9.6",
+  "sdk_version": "5.9.9",
   "app_id": "imperal-newsletter-writer-extension",
-  "version": "1.4.0",
+  "version": "1.5.0",
   "name": "Newsletter Writer",
   "description": "Project-based email newsletter writing: keep per-project context (brand voice, goals, reference links, reusable 'fill' items like promo codes) and have newsletters written cheaply, with mechanical quality gates and self-review, grounded in that context. Read/edit full newsletters in the panel — chat never touches full bodies.",
   "icon": "icon.svg",
@@ -2521,7 +2521,7 @@
     },
     {
       "name": "read_full_newsletter",
-      "description": "Read the ENTIRE newsletter body as editable Markdown (# subject, ## section headings, body in light markdown). Returns the full text to chat on purpose — call this before editing so you work from the real current text, never from memory. Use for: покажи полный текст письма, дай отредактировать, read the whole newsletter.",
+      "description": "Read the ENTIRE newsletter body as editable Markdown (# subject, ## section headings, body in light markdown). Returns the full text to chat on purpose — call this before editing so you work from the real current text, never from memory. (To hand a newsletter to another app like MailerLite/Mail/Notes, use export_newsletter_text instead — sending raw Markdown produces literal '**'/'##' characters in the recipient's inbox.) Use for: покажи полный текст письма, дай отредактировать, read the whole newsletter.",
       "action_type": "read",
       "chain_callable": true,
       "effects": [],
@@ -2579,6 +2579,81 @@
           "id"
         ],
         "title": "NewsletterTextRecord",
+        "type": "object"
+      },
+      "event": "",
+      "background": false,
+      "long_running": false,
+      "scopes": [],
+      "owner_chat_tool": "newsletter_writer"
+    },
+    {
+      "name": "export_newsletter_text",
+      "description": "Get the FULL newsletter body — both as HTML (`html`: <h2>/<strong>/<ul> markup, no literal Markdown syntax) and plain text (`text`) — so it can be handed to another extension: MailerLite (create/update a campaign), Mail's send()/reply() (is_html=true), or Notes. ONLY call this when the user explicitly asks to send/export/copy the newsletter somewhere. Never call this for routine status checks or listing — use list_newsletters / check_generation_status for those, which stay cheap on purpose.",
+      "action_type": "read",
+      "chain_callable": true,
+      "effects": [],
+      "id_projection": "",
+      "params_schema": {
+        "properties": {
+          "newsletter_id": {
+            "description": "Newsletter ID from list_newsletters",
+            "title": "Newsletter Id",
+            "type": "string"
+          }
+        },
+        "required": [
+          "newsletter_id"
+        ],
+        "title": "NewsletterIdParams",
+        "type": "object"
+      },
+      "return_schema": {
+        "description": "The one deliberate exception to 'never return body to chat' for a\ncross-tool HANDOFF (send it by email, save it to MailerLite/Notes, paste\nit elsewhere) — mirrors Article Writer's ArticleFullText exactly, same\nreasoning and same both-fields-always-populated rule.\n\nBOTH `text` and `html` are populated — `html` is real markup\n(<h2>/<strong>/<ul>) for MailerLite/Mail/Notes (is_html=true); `text` is\na plain fallback. Without a real HTML export, Webbee's only path to hand\na newsletter to another tool was read_full_newsletter's raw Markdown —\nwhich is why sent newsletters were showing up with literal `**bold**`/\n`##` syntax instead of formatting (2026-07-17 report).",
+        "properties": {
+          "id": {
+            "title": "Id",
+            "type": "string"
+          },
+          "subject": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Subject"
+          },
+          "preheader": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Preheader"
+          },
+          "text": {
+            "title": "Text",
+            "type": "string"
+          },
+          "html": {
+            "title": "Html",
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "text",
+          "html"
+        ],
+        "title": "NewsletterFullText",
         "type": "object"
       },
       "event": "",
@@ -2786,7 +2861,7 @@
     },
     {
       "name": "generate_newsletter",
-      "description": "Start writing a newsletter's first draft using the project's context (brand voice, goals, fill categories) plus a topic/goal brief and any real source facts (from web search or other extensions, e.g. an Article Writer article or Matomo/GSC data) the draft's claims must be grounded in. Runs in the background — call check_newsletter_generation_status with the returned job_id to see when it's done (status lands on 'review'). Use for: напиши рассылку, сгенерируй письмо, write the newsletter, draft this email.",
+      "description": "Start writing a newsletter's first draft using the project's context (brand voice, goals, fill categories) plus a topic/goal brief and any real source facts (from web search or other extensions, e.g. an Article Writer article or Matomo/GSC data) the draft's claims must be grounded in. Runs in the background — call check_generation_status with the returned job_id to see when it's done (status lands on 'review'). Use for: напиши рассылку, сгенерируй письмо, write the newsletter, draft this email.",
       "action_type": "write",
       "chain_callable": true,
       "effects": [
@@ -2931,7 +3006,7 @@
       "owner_chat_tool": "newsletter_writer"
     },
     {
-      "name": "check_newsletter_generation_status",
+      "name": "check_generation_status",
       "description": "Check progress of a generate_newsletter job — status, model used, cost. Use for: готова ли рассылка, статус генерации, is the newsletter ready, check generation progress.",
       "action_type": "read",
       "chain_callable": true,
@@ -3084,11 +3159,29 @@
         "type": "object"
       },
       "return_schema": {
+        "description": "matched/replaced_count are honesty evidence: when the locate step\ncan't find a block containing the instruction's target, matched=False\nand replaced_count=0 — nothing gets edited (mirrors Article Writer's\n2026-07-17 fix).",
         "properties": {
-          "order_index": {
+          "matched": {
+            "default": true,
+            "title": "Matched",
+            "type": "boolean"
+          },
+          "replaced_count": {
             "default": 0,
-            "title": "Order Index",
+            "title": "Replaced Count",
             "type": "integer"
+          },
+          "order_index": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Order Index"
           },
           "heading": {
             "anyOf": [

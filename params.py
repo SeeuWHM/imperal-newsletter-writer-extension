@@ -10,7 +10,31 @@ validation rules.
 # for the same convention/reasoning).
 
 from typing import List, Optional
-from pydantic import BaseModel, Field
+from typing_extensions import Annotated
+from pydantic import AfterValidator, BaseModel, Field
+
+# Placeholder/fabricated values an LLM sometimes emits instead of a real id
+# copied from a prior list/create call. Defense-in-depth alongside the
+# kernel's own arg-gate check — real ids are backend-generated uuid4
+# strings, so a non-empty value that happens to match one of these is never
+# a legitimate id. Mirrors imperal-article-writer-extension/params.py.
+_PLACEHOLDER_IDS = {
+    "unknown", "undefined", "null", "none", "n/a", "na", "todo", "tbd",
+    "string", "example", "placeholder", "xxx",
+}
+
+
+def _reject_placeholder_id(v: str) -> str:
+    stripped = v.strip()
+    if not stripped or stripped.lower() in _PLACEHOLDER_IDS:
+        raise ValueError(
+            f"'{v}' looks like a placeholder, not a real id — call the matching list_* function "
+            "first and use the real id it returns."
+        )
+    return v
+
+
+EntityId = Annotated[str, AfterValidator(_reject_placeholder_id)]
 
 
 # ── Projects ─────────────────────────────────────────────────────────────
@@ -35,7 +59,7 @@ class CreateProjectParams(BaseModel):
 
 
 class UpdateProjectContextParams(BaseModel):
-    project_id: str = Field(..., description="Project ID from list_projects")
+    project_id: EntityId = Field(..., description="Project ID from list_projects")
     name: Optional[str] = Field(default=None, max_length=255)
     description: Optional[str] = Field(default=None, max_length=5000)
     brand_voice: Optional[str] = Field(default=None, max_length=5000)
@@ -49,66 +73,66 @@ class UpdateProjectContextParams(BaseModel):
 
 
 class ProjectIdParams(BaseModel):
-    project_id: str = Field(..., description="Project ID from list_projects")
+    project_id: EntityId = Field(..., description="Project ID from list_projects")
 
 
 class AddReferenceLinkParams(BaseModel):
-    project_id: str = Field(..., description="Project ID from list_projects")
+    project_id: EntityId = Field(..., description="Project ID from list_projects")
     url: str = Field(..., min_length=1, max_length=500, description="URL of an internal page on this project's own site")
     description: str = Field(..., min_length=1, max_length=300, description="What that page is about / its topic")
 
 
 class RemoveReferenceLinkParams(BaseModel):
-    project_id: str = Field(..., description="Project ID from list_projects")
+    project_id: EntityId = Field(..., description="Project ID from list_projects")
     url: str = Field(..., min_length=1, max_length=500, description="URL to remove from the reference links")
 
 
 # ── Fill categories / items ─────────────────────────────────────────────
 
 class CreateFillCategoryParams(BaseModel):
-    project_id: str = Field(..., description="Project ID from list_projects")
+    project_id: EntityId = Field(..., description="Project ID from list_projects")
     name: str = Field(..., min_length=1, max_length=100, description="e.g. 'Promo codes', 'Priority links', 'Topics to cover'")
     category_type: str = Field(default="custom", description="One of: promo_code, link, topic, custom")
     instructions: Optional[str] = Field(default=None, max_length=500, description="How/when the writer should use items from this category")
 
 
 class FillCategoryIdParams(BaseModel):
-    project_id: str = Field(..., description="Project ID from list_projects")
-    category_id: str = Field(..., description="Fill category ID from list_fill_categories")
+    project_id: EntityId = Field(..., description="Project ID from list_projects")
+    category_id: EntityId = Field(..., description="Fill category ID from list_fill_categories")
 
 
 class ListFillItemsParams(BaseModel):
-    project_id: str = Field(..., description="Project ID from list_projects")
-    category_id: str = Field(..., description="Fill category ID from list_fill_categories")
+    project_id: EntityId = Field(..., description="Project ID from list_projects")
+    category_id: EntityId = Field(..., description="Fill category ID from list_fill_categories")
     active_only: bool = Field(default=False, description="Only items not yet marked inactive/exhausted")
 
 
 class CreateFillItemParams(BaseModel):
-    project_id: str = Field(..., description="Project ID from list_projects")
-    category_id: str = Field(..., description="Fill category ID from list_fill_categories")
+    project_id: EntityId = Field(..., description="Project ID from list_projects")
+    category_id: EntityId = Field(..., description="Fill category ID from list_fill_categories")
     value: str = Field(..., min_length=1, max_length=1000, description="The actual promo code / URL / topic text")
     note: Optional[str] = Field(default=None, max_length=500)
 
 
 class UpdateFillItemParams(BaseModel):
-    project_id: str = Field(..., description="Project ID from list_projects")
-    category_id: str = Field(..., description="Fill category ID from list_fill_categories")
-    item_id: str = Field(..., description="Fill item ID from list_fill_items")
+    project_id: EntityId = Field(..., description="Project ID from list_projects")
+    category_id: EntityId = Field(..., description="Fill category ID from list_fill_categories")
+    item_id: EntityId = Field(..., description="Fill item ID from list_fill_items")
     value: Optional[str] = Field(default=None, min_length=1, max_length=1000)
     note: Optional[str] = Field(default=None, max_length=500)
     is_active: Optional[bool] = Field(default=None, description="Set false to retire it (e.g. an expired promo code)")
 
 
 class DeleteFillItemParams(BaseModel):
-    project_id: str = Field(..., description="Project ID from list_projects")
-    category_id: str = Field(..., description="Fill category ID from list_fill_categories")
-    item_id: str = Field(..., description="Fill item ID from list_fill_items")
+    project_id: EntityId = Field(..., description="Project ID from list_projects")
+    category_id: EntityId = Field(..., description="Fill category ID from list_fill_categories")
+    item_id: EntityId = Field(..., description="Fill item ID from list_fill_items")
 
 
 # ── Newsletters ──────────────────────────────────────────────────────────
 
 class CreateNewsletterParams(BaseModel):
-    project_id: str = Field(..., min_length=36, max_length=36, description="Project ID from list_projects")
+    project_id: EntityId = Field(..., min_length=36, max_length=36, description="Project ID from list_projects")
     subject: Optional[str] = Field(default=None, max_length=500)
     brief_topic: Optional[str] = Field(default=None, max_length=500)
 
@@ -119,27 +143,27 @@ class ListNewslettersParams(BaseModel):
 
 
 class NewsletterIdParams(BaseModel):
-    newsletter_id: str = Field(..., description="Newsletter ID from list_newsletters")
+    newsletter_id: EntityId = Field(..., description="Newsletter ID from list_newsletters")
 
 
 class UpdateNewsletterStatusParams(BaseModel):
-    newsletter_id: str = Field(..., description="Newsletter ID from list_newsletters")
+    newsletter_id: EntityId = Field(..., description="Newsletter ID from list_newsletters")
     status: str = Field(..., description="One of: idea, writing, review, scheduled, sent")
 
 
 class UpdateNewsletterMetaParams(BaseModel):
-    newsletter_id: str = Field(..., description="Newsletter ID from list_newsletters")
+    newsletter_id: EntityId = Field(..., description="Newsletter ID from list_newsletters")
     subject: Optional[str] = Field(default=None, max_length=500)
     preheader: Optional[str] = Field(default=None, max_length=200)
 
 
 class FillSelectionParam(BaseModel):
-    category_id: str = Field(..., min_length=36, max_length=36)
+    category_id: EntityId = Field(..., min_length=36, max_length=36)
     item_ids: List[str] = Field(default_factory=list, max_length=20)
 
 
 class GenerateNewsletterParams(BaseModel):
-    newsletter_id: str = Field(..., description="Newsletter ID from create_newsletter")
+    newsletter_id: EntityId = Field(..., description="Newsletter ID from create_newsletter")
     topic: str = Field(..., min_length=1, max_length=1000, description="What this newsletter should cover")
     goal: Optional[str] = Field(default=None, max_length=500)
     audience_hint: Optional[str] = Field(default=None, max_length=500)
@@ -153,12 +177,12 @@ class GenerateNewsletterParams(BaseModel):
 
 
 class GenerationJobStatusParams(BaseModel):
-    newsletter_id: str = Field(..., description="Newsletter ID from list_newsletters")
-    job_id: str = Field(..., description="Job ID returned by generate_newsletter")
+    newsletter_id: EntityId = Field(..., description="Newsletter ID from list_newsletters")
+    job_id: EntityId = Field(..., description="Job ID returned by generate_newsletter")
 
 
 class PatchNewsletterParams(BaseModel):
-    newsletter_id: str = Field(..., description="Newsletter ID from list_newsletters")
+    newsletter_id: EntityId = Field(..., description="Newsletter ID from list_newsletters")
     instruction: str = Field(..., min_length=1, max_length=1000, description="e.g. 'rewrite the block about the promo to be more urgent'")
     section_hint: Optional[str] = Field(default=None, max_length=500)
 
@@ -166,7 +190,7 @@ class PatchNewsletterParams(BaseModel):
 class UpdateNewsletterSectionParams(BaseModel):
     """PANEL-ONLY manual section overwrite — not an AI writing step. Mirrors
     Article Writer's SaveArticleSectionParams (plain heading+content)."""
-    newsletter_id: str = Field(...)
+    newsletter_id: EntityId = Field(...)
     order_index: int = Field(..., ge=0)
     heading: Optional[str] = Field(default=None, max_length=500)
     content: Optional[str] = Field(default=None, max_length=200000)
@@ -178,7 +202,7 @@ class EditFullNewsletterParams(BaseModel):
     Distinct from patch_newsletter (targeted one-section rewrite): this replaces
     the whole document with exactly what you submit — nothing is re-generated,
     so preserve every unchanged part verbatim."""
-    newsletter_id: str = Field(..., description="Newsletter ID from list_newsletters")
+    newsletter_id: EntityId = Field(..., description="Newsletter ID from list_newsletters")
     content_markdown: str = Field(..., min_length=1, max_length=400000,
                                   description="The COMPLETE edited newsletter as Markdown (# subject, ## headings, body)")
 
@@ -188,5 +212,5 @@ class SaveFullNewsletterParams(BaseModel):
     not something Webbee should ever construct from chat. Mirrors Article
     Writer's SaveFullArticleParams; the document splits back into
     {heading, content} sections at heading boundaries (see richtext.py)."""
-    newsletter_id: str = Field(...)
+    newsletter_id: EntityId = Field(...)
     content_html: str = Field(default="", max_length=400000)

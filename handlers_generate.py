@@ -13,13 +13,9 @@ imperal-article-writer-extension/handlers_generate.py.
 from imperal_sdk.types import ActionResult
 
 from app import chat
-from api_client import call_backend, GENERATE_TIMEOUT, PATCH_TIMEOUT
+from api_client import call_backend, _err, GENERATE_TIMEOUT, PATCH_TIMEOUT
 from params import GenerateNewsletterParams, GenerationJobStatusParams, PatchNewsletterParams
 from response_models import GenerationJobResponse, GenerationStatusResponse, PatchResult
-
-
-def _err(data: dict) -> ActionResult:
-    return ActionResult.error(error=data.get("error", "unknown error"))
 
 
 @chat.function(
@@ -29,7 +25,7 @@ def _err(data: dict) -> ActionResult:
         "goals, fill categories) plus a topic/goal brief and any real source facts (from web "
         "search or other extensions, e.g. an Article Writer article or Matomo/GSC data) the "
         "draft's claims must be grounded in. Runs in the background — call "
-        "check_newsletter_generation_status with the returned job_id to see when it's done "
+        "check_generation_status with the returned job_id to see when it's done "
         "(status lands on 'review'). Use for: напиши рассылку, сгенерируй письмо, write the "
         "newsletter, draft this email."
     ),
@@ -53,12 +49,12 @@ async def fn_generate_newsletter(ctx, params: GenerateNewsletterParams) -> Actio
     )
     return ActionResult.success(
         data=result,
-        summary=f"Generation started (job {result.job_id}). Poll check_newsletter_generation_status to see when it lands in review.",
+        summary=f"Generation started (job {result.job_id}). Poll check_generation_status to see when it lands in review.",
     )
 
 
 @chat.function(
-    "check_newsletter_generation_status",
+    "check_generation_status",
     description=(
         "Check progress of a generate_newsletter job — status, model used, cost. Use for: "
         "готова ли рассылка, статус генерации, is the newsletter ready, check generation progress."
@@ -103,8 +99,17 @@ async def fn_patch_newsletter(ctx, params: PatchNewsletterParams) -> ActionResul
     )
     if "error" in data:
         return _err(data)
+    matched = data.get("matched", True)
     result = PatchResult(
-        order_index=data.get("order_index", 0), heading=data.get("heading"),
+        matched=matched, replaced_count=data.get("replaced_count", 1 if matched else 0),
+        order_index=data.get("order_index"), heading=data.get("heading"),
         preview=data.get("preview", ""),
     )
-    return ActionResult.success(data=result, summary=f"Patched block {result.order_index}.")
+    if not matched:
+        summary = (
+            "Could not find any block containing that text — nothing was changed. "
+            "Check the target text is still in the newsletter (read_full_newsletter) before retrying."
+        )
+    else:
+        summary = f"Patched block {result.order_index}."
+    return ActionResult.success(data=result, summary=summary)
