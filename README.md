@@ -1,7 +1,7 @@
 # imperal-newsletter-writer-extension
 
-[![Imperal SDK](https://img.shields.io/badge/imperal--sdk-5.9.6-blue)](https://pypi.org/project/imperal-sdk/)
-[![Version](https://img.shields.io/badge/version-1.4.0-green)](https://github.com/SeeuWHM/imperal-newsletter-writer-extension/releases)
+[![Imperal SDK](https://img.shields.io/badge/imperal--sdk-5.9.9-blue)](https://pypi.org/project/imperal-sdk/)
+[![Version](https://img.shields.io/badge/version-1.5.0-green)](https://github.com/SeeuWHM/imperal-newsletter-writer-extension/releases)
 [![License](https://img.shields.io/badge/license-LGPL--2.1-orange)](LICENSE)
 [![Platform](https://img.shields.io/badge/platform-Imperal%20Cloud-purple)](https://panel.imperal.io)
 
@@ -16,12 +16,13 @@ Newsletter Writer keeps a per-brand "project" context — goals, brand voice, ke
 Talk to it naturally:
 
 ```
-"создай проект рассылки для нашего хостинга"
-"добавь промокод HOSTING50 — 50% скидка на годовой план"
-"напиши рассылку про новую акцию, привязанную к этой ссылке"
-"готова ли рассылка?"
-"перепиши блок про промокод, сделай срочнее"
+"create a newsletter project for our hosting brand"
+"add a promo code HOSTING50 — 50% off the annual plan"
+"write a newsletter about the new promo, tied to this link"
+"is the newsletter ready yet?"
+"rewrite the block about the promo code, make it more urgent"
 "shorten the intro and make the CTA punchier"
+"send this newsletter's text to my inbox"
 ```
 
 Or work in the panel: pick a project on the left, open a newsletter on the kanban board, and edit the whole thing — subject as the leading heading, body below — in one rich-text editor.
@@ -36,8 +37,10 @@ Or work in the panel: pick a project on the left, open a newsletter on the kanba
 - **AI generation** — background job per newsletter: outline → draft → mechanical gates → judge, grounded in project context plus whatever source facts (web search, Article Writer, Matomo/GSC data) are handed in.
 - **Natural-language patching** — locate and rewrite one block by instruction, without touching the rest of the newsletter.
 - **Full-text read/edit for chat** — `read_full_newsletter` / `edit_full_newsletter` work over Markdown, but chat functions never return or accept a full body anywhere else — metadata only.
+- **Export for handoff** — `export_newsletter_text` returns the full body as real HTML + plain text, for handing to MailerLite, Mail, or Notes — Markdown syntax never leaks into a sent email.
 - **Panel-only full editor** — one merged `ui.RichEditor` document (subject as `<h1>`, sections as `<h2>` + body) is the true read/write surface, zero LLM tokens regardless of corpus size.
-- **Proactive "ready" notice** — a skeleton change-alert fires the moment a generation job lands a newsletter in "review", so Webbee can tell the user without being asked.
+- **Honest patch results** — `patch_newsletter` reports `matched`/`replaced_count`; if the instruction's target text genuinely isn't in the newsletter, it says so instead of a false "Patched block".
+- **Proactive "ready" notice** — the skeleton fires a `ctx.notify()` the moment a generation job lands a newsletter in "review" (tracked in our own durable storage, not the kernel's in-memory diff state — see docs/extension.md "Proactivity"), so Webbee can tell the user without being asked.
 
 ---
 
@@ -53,9 +56,9 @@ imperal-newsletter-writer-extension/
 ├── richtext.py                # HTML <-> {subject, sections} <-> Markdown conversion for the merged editor
 ├── navstate.py                # Tiny ctx.store doc remembering the last open project/newsletter/view
 ├── skeleton.py                 # LLM context cache (project/newsletter counts) + proactive "ready" alert
-├── handlers_projects.py        # Chat functions: project CRUD + reference links
+├── handlers_projects.py        # Chat functions: project CRUD + open_project + reference links
 ├── handlers_fill.py            # Chat functions: fill category/item CRUD
-├── handlers_newsletters.py     # Chat functions: newsletter metadata CRUD + full-text read/edit
+├── handlers_newsletters.py     # Chat functions: newsletter metadata CRUD + full-text read/edit/export
 ├── handlers_generate.py        # Chat functions: generate_newsletter, status poll, patch_newsletter
 ├── panels_side.py               # Left panel — project switcher + new-project form
 ├── panels_workspace.py           # Center panel — kanban board + single merged RichEditor
@@ -75,6 +78,7 @@ Newsletter text lives in this extension's own backend + database — not in `ctx
 | `list_projects` | read | List all newsletter projects — id, name, keywords, goals |
 | `update_project_context` | write | Update name, description, brand voice, goals, keywords, links, MailerLite targeting |
 | `delete_project` | destructive | Delete a project and cascade-delete all its newsletters/fill data |
+| `open_project` | write | Panel-only: switch the active project (sidebar detail + workspace board) |
 | `add_reference_link` | write | Add one internal page as a reference link the writer may anchor into copy |
 | `list_reference_links` | read | List a project's internal reference links |
 | `remove_reference_link` | destructive | Remove one reference link by URL |
@@ -93,10 +97,11 @@ Newsletter text lives in this extension's own backend + database — not in `ctx
 | `save_full_newsletter` | write | Panel-only: replace the entire newsletter from the merged editor document |
 | `read_full_newsletter` | read | Read the entire newsletter body as editable Markdown |
 | `edit_full_newsletter` | write | Replace the entire newsletter with an edited Markdown version, verbatim |
+| `export_newsletter_text` | read | Return the full body as HTML + plain text, for handing to another extension (MailerLite/Mail/Notes) |
 | `delete_newsletter` | destructive | Permanently delete a newsletter |
 | `generate_newsletter` | write | Start the background generation pipeline: outline → draft → gates → judge |
 | `check_generation_status` | read | Poll a generation job — status, model used, cost estimate |
-| `patch_newsletter` | write | Rewrite one block by natural-language instruction; returns a short preview |
+| `patch_newsletter` | write | Rewrite one block by natural-language instruction; returns `matched`/`replaced_count` honesty fields plus a short preview |
 
 ---
 
@@ -114,7 +119,7 @@ The `backend_jwt` secret (`scope="app"`, developer-managed only) authenticates t
 
 ```bash
 python3 -m py_compile *.py          # syntax check — mandatory before every commit
-python -m pytest -q                 # 54 tests: handlers, richtext, skeleton, newsletters
+.venv/bin/pytest -q                 # 70 tests: handlers, richtext, skeleton, newsletters, params
 imperal build .                     # regenerate imperal.json from registered tools
 imperal validate .                  # validate against current SDK federal rules (V1-V24+V31)
 ```
@@ -123,5 +128,5 @@ imperal validate .                  # validate against current SDK federal rules
 
 ## Built with
 
-- [imperal-sdk](https://github.com/imperalcloud/imperal-sdk) 5.9.6
+- [imperal-sdk](https://github.com/imperalcloud/imperal-sdk) 5.9.9
 - [Imperal Cloud](https://panel.imperal.io)
