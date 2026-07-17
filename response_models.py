@@ -114,17 +114,6 @@ class GenerationJobResponse(BaseModel):
     status: str = "queued"
 
 
-class GenerationStatusResponse(BaseModel):
-    id: str
-    newsletter_id: str = ""
-    kind: str = ""
-    status: str = ""
-    model: Optional[str] = None
-    tokens_used: Optional[int] = None
-    cost_estimate: Optional[float] = None
-    error: Optional[str] = None
-
-
 class PatchResult(BaseModel):
     """matched/replaced_count are honesty evidence: when the locate step
     can't find a block containing the instruction's target, matched=False

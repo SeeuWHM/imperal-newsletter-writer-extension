@@ -99,8 +99,7 @@ Newsletter text lives in this extension's own backend + database — not in `ctx
 | `edit_full_newsletter` | write | Replace the entire newsletter with an edited Markdown version, verbatim |
 | `export_newsletter_text` | read | Return the full body as HTML + plain text, for handing to another extension (MailerLite/Mail/Notes) |
 | `delete_newsletter` | destructive | Permanently delete a newsletter |
-| `generate_newsletter` | write | Start the background generation pipeline: outline → draft → gates → judge |
-| `check_generation_status` | read | Poll a generation job — status, model used, cost estimate |
+| `generate_newsletter` | write | Start the background generation pipeline: outline → draft → gates → judge; check it's done with `list_newsletters(status='review')` |
 | `patch_newsletter` | write | Rewrite one block by natural-language instruction; returns `matched`/`replaced_count` honesty fields plus a short preview |
 
 ---

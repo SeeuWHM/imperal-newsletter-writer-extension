@@ -2751,7 +2751,7 @@
     },
     {
       "name": "export_newsletter_text",
-      "description": "Get the FULL newsletter body — both as HTML (`html`: <h2>/<strong>/<ul> markup, no literal Markdown syntax) and plain text (`text`) — so it can be handed to another extension: MailerLite (create/update a campaign), Mail's send()/reply() (is_html=true), or Notes. ONLY call this when the user explicitly asks to send/export/copy the newsletter somewhere. Never call this for routine status checks or listing — use list_newsletters / check_generation_status for those, which stay cheap on purpose.",
+      "description": "Get the FULL newsletter body — both as HTML (`html`: <h2>/<strong>/<ul> markup, no literal Markdown syntax) and plain text (`text`) — so it can be handed to another extension: MailerLite (create/update a campaign), Mail's send()/reply() (is_html=true), or Notes. ONLY call this when the user explicitly asks to send/export/copy the newsletter somewhere. Never call this for routine status checks or listing — use list_newsletters for those, which stays cheap on purpose.",
       "action_type": "read",
       "chain_callable": true,
       "effects": [],
@@ -3023,7 +3023,7 @@
     },
     {
       "name": "generate_newsletter",
-      "description": "Start writing a newsletter's first draft using the project's context (brand voice, goals, fill categories) plus a topic/goal brief and any real source facts (from web search or other extensions, e.g. an Article Writer article or Matomo/GSC data) the draft's claims must be grounded in. Runs in the background. To check when it's done: if you generated just this ONE newsletter and want cost/model/error detail on THIS run, poll check_generation_status with the returned job_id; if you generated SEVERAL newsletters at once (or don't need per-run detail), it's simpler and more reliable to just call list_newsletters(status='review') a bit later instead of tracking every job_id — status lands on 'review' when ready either way. Use for: write the newsletter, draft this email.",
+      "description": "Start writing a newsletter's first draft using the project's context (brand voice, goals, fill categories) plus a topic/goal brief and any real source facts (from web search or other extensions, e.g. an Article Writer article or Matomo/GSC data) the draft's claims must be grounded in. Runs in the background — it does not block. To see when it's done, call list_newsletters(status='review') a bit later: a newsletter's status lands on 'review' the moment its draft is ready, so that one call shows everything that finished — no job_id tracking needed. Use for: write the newsletter, draft this email.",
       "action_type": "write",
       "chain_callable": true,
       "effects": [
@@ -3162,115 +3162,6 @@
         "type": "object"
       },
       "event": "newsletter-writer.newsletter.generation_started",
-      "background": false,
-      "long_running": false,
-      "scopes": [],
-      "owner_chat_tool": "newsletter_writer"
-    },
-    {
-      "name": "check_generation_status",
-      "description": "Check ONE specific generate_newsletter job by its job_id — status, model used, cost, error detail. This needs the exact (newsletter_id, job_id) pair from when you started it, so it does NOT scale well to checking several newsletters generated in the same turn — for that, call list_newsletters(status='review') instead, which needs no job_id at all and just shows what's actually ready right now. Use this one only when you genuinely need the per-run cost/model/error detail for a single job. Use for: check generation progress for this one job, what model/cost did this generation use.",
-      "action_type": "read",
-      "chain_callable": true,
-      "effects": [],
-      "id_projection": "",
-      "params_schema": {
-        "properties": {
-          "newsletter_id": {
-            "description": "Newsletter ID from list_newsletters",
-            "title": "Newsletter Id",
-            "type": "string"
-          },
-          "job_id": {
-            "description": "Job ID returned by generate_newsletter",
-            "title": "Job Id",
-            "type": "string"
-          }
-        },
-        "required": [
-          "newsletter_id",
-          "job_id"
-        ],
-        "title": "GenerationJobStatusParams",
-        "type": "object"
-      },
-      "return_schema": {
-        "properties": {
-          "id": {
-            "title": "Id",
-            "type": "string"
-          },
-          "newsletter_id": {
-            "default": "",
-            "title": "Newsletter Id",
-            "type": "string"
-          },
-          "kind": {
-            "default": "",
-            "title": "Kind",
-            "type": "string"
-          },
-          "status": {
-            "default": "",
-            "title": "Status",
-            "type": "string"
-          },
-          "model": {
-            "anyOf": [
-              {
-                "type": "string"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "default": null,
-            "title": "Model"
-          },
-          "tokens_used": {
-            "anyOf": [
-              {
-                "type": "integer"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "default": null,
-            "title": "Tokens Used"
-          },
-          "cost_estimate": {
-            "anyOf": [
-              {
-                "type": "number"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "default": null,
-            "title": "Cost Estimate"
-          },
-          "error": {
-            "anyOf": [
-              {
-                "type": "string"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "default": null,
-            "title": "Error"
-          }
-        },
-        "required": [
-          "id"
-        ],
-        "title": "GenerationStatusResponse",
-        "type": "object"
-      },
-      "event": "",
       "background": false,
       "long_running": false,
       "scopes": [],

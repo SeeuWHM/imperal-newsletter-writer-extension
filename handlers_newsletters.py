@@ -246,8 +246,8 @@ async def fn_read_full_newsletter(ctx, params: NewsletterIdParams) -> ActionResu
         "literal Markdown syntax) and plain text (`text`) — so it can be handed to another "
         "extension: MailerLite (create/update a campaign), Mail's send()/reply() (is_html=true), "
         "or Notes. ONLY call this when the user explicitly asks to send/export/copy the newsletter "
-        "somewhere. Never call this for routine status checks or listing — use list_newsletters / "
-        "check_generation_status for those, which stay cheap on purpose."
+        "somewhere. Never call this for routine status checks or listing — use list_newsletters "
+        "for those, which stays cheap on purpose."
     ),
     action_type="read",
     data_model=NewsletterFullText,

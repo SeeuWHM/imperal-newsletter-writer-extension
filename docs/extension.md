@@ -91,7 +91,7 @@ newsletter-writer-extension/
 ├── handlers_fill.py      — fill categories + fill items (the domain-data store; note = conditions)
 ├── handlers_newsletters.py — newsletter CRUD, status/meta, section/full save (panel), read_full,
 │                              edit_full, export_newsletter_text [NEW]
-├── handlers_generate.py  — generate_newsletter, check_generation_status, patch_newsletter
+├── handlers_generate.py  — generate_newsletter, patch_newsletter
 ├── panels_side.py        — LEFT "sidebar": active project + project switcher
 ├── panels_workspace.py   — CENTER "workspace": newsletter board + single-editor view (H1 subject)
 └── tests/  test_handlers.py · test_newsletters.py · test_richtext.py · test_skeleton.py ·
@@ -102,7 +102,7 @@ Every file < 300 lines.
 
 ---
 
-## Chat-function inventory (28 functions + 2 skeleton tools)
+## Chat-function inventory (27 functions + 2 skeleton tools)
 
 ### Projects (`handlers_projects.py`)
 - `create_project`, `list_projects`, `update_project_context`, `delete_project` (cascades)
@@ -133,11 +133,7 @@ Every file < 300 lines.
 - `delete_newsletter` — destructive
 
 ### Generation (`handlers_generate.py`)
-- `generate_newsletter(newsletter_id, topic, goal?, audience_hint?, tone_override?, target_word_count?, fill_selections?, source_snippets?)` — enqueues async pipeline → `{job_id,…}`. Description now steers Webbee: for ONE newsletter, poll `check_generation_status`; for SEVERAL generated at once, just call `list_newsletters(status='review')` later instead of tracking every job_id.
-- `check_generation_status(newsletter_id, job_id)` — read. **Renamed 2026-07-18** (was
-  `check_newsletter_generation_status` — tripped the SDK 5.9.9 V33 64-char tool-name cap and got
-  kernel-aliased to a hash suffix; now matches Article Writer's naming). Per-job cost/model/error
-  detail; does not scale to checking several newsletters from the same turn — see above.
+- `generate_newsletter(newsletter_id, topic, goal?, audience_hint?, tone_override?, target_word_count?, fill_selections?, source_snippets?)` — enqueues async pipeline → `{job_id,…}`. To check when it's done, call `list_newsletters(status='review')` a bit later — status lands on `review` the moment the draft is ready, so that one call shows everything that finished with no job_id tracking. **`check_generation_status` was removed (2026-07-18):** its `GET /v1/newsletters/{id}/jobs/{job_id}` job-poll endpoint returned an error in production while the direct status-list path worked, so the broken duplicate was dropped in favour of the one reliable path (Ignat's call). Mirrors the same removal in Article Writer.
 - `patch_newsletter(newsletter_id, instruction, section_hint?)` — one-section NL rewrite, returns a
   preview. **Honesty fix (2026-07-18):** `PatchResult` now carries `matched`/`replaced_count`. If the
   locate step can't find a block actually containing the instruction's target — or the edit model left
@@ -282,7 +278,7 @@ Moldova project, is untouched — that's real content, not a description/hint.)
 Only `generate_newsletter` (multi-LLM pipeline) and `patch_newsletter` (2 LLM calls) spend backend
 LLM tokens; `read_full`/`edit_full`/`export` spend Webbee context tokens (newsletters are short, so
 small); the rest is cheap DB. Notes on the current prices:
-- `list_*`, `check_generation_status` = 10 ✓ (called constantly — keep cheapest)
+- `list_*` = 10 ✓ (called constantly — including as the generation-done check — keep cheapest)
 - create/update/delete/status/meta, fill/reference ops = 10–15 ✓
 - `open_project` [NEW] → **0/free** — pure UI navigation, no LLM, no meaningful backend cost
 - `update_newsletter_section`, `save_full_newsletter` (PANEL, 0 LLM) = 10 → **consider 0/min**

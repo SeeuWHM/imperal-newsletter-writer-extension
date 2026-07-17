@@ -21,7 +21,7 @@ from params import (
     CreateNewsletterParams, ListNewslettersParams, NewsletterIdParams,
     UpdateNewsletterStatusParams, UpdateNewsletterMetaParams, UpdateNewsletterSectionParams,
     SaveFullNewsletterParams, EditFullNewsletterParams,
-    GenerateNewsletterParams, GenerationJobStatusParams, PatchNewsletterParams,
+    GenerateNewsletterParams, PatchNewsletterParams,
 )
 
 
@@ -264,20 +264,6 @@ async def test_generate_newsletter_enqueues_job(monkeypatch):
 
 
 @pytest.mark.asyncio
-async def test_check_generation_status(monkeypatch):
-    async def fake_call(ctx, method, path, **kw):
-        assert path == "/v1/newsletters/n1/jobs/j1"
-        return {"id": "j1", "newsletter_id": "n1", "kind": "generate", "status": "done", "model": "claude-sonnet-5"}
-
-    monkeypatch.setattr(handlers_generate, "call_backend", fake_call)
-    result = await handlers_generate.fn_check_generation_status(
-        _ctx(), GenerationJobStatusParams(newsletter_id="n1", job_id="j1")
-    )
-    assert result.status == "success"
-    assert result.data.status == "done"
-
-
-@pytest.mark.asyncio
 async def test_patch_newsletter(monkeypatch):
     async def fake_call(ctx, method, path, **kw):
         assert method == "POST" and path == "/v1/newsletters/n1/patch"
@@ -298,8 +284,8 @@ async def test_backend_error_propagates(monkeypatch):
         return {"error": "not found"}
 
     monkeypatch.setattr(handlers_generate, "call_backend", fake_call)
-    result = await handlers_generate.fn_check_generation_status(
-        _ctx(), GenerationJobStatusParams(newsletter_id="n1", job_id="missing")
+    result = await handlers_generate.fn_patch_newsletter(
+        _ctx(), PatchNewsletterParams(newsletter_id="n1", instruction="tighten the intro")
     )
     assert result.status == "error"
     assert result.error == "not found"

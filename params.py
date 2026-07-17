@@ -176,11 +176,6 @@ class GenerateNewsletterParams(BaseModel):
     )
 
 
-class GenerationJobStatusParams(BaseModel):
-    newsletter_id: EntityId = Field(..., description="Newsletter ID from list_newsletters")
-    job_id: EntityId = Field(..., description="Job ID returned by generate_newsletter")
-
-
 class PatchNewsletterParams(BaseModel):
     newsletter_id: EntityId = Field(..., description="Newsletter ID from list_newsletters")
     instruction: str = Field(..., min_length=1, max_length=1000, description="e.g. 'rewrite the block about the promo to be more urgent'")
