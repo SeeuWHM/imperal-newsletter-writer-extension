@@ -174,9 +174,9 @@ async def fn_update_newsletter_section(ctx, params: UpdateNewsletterSectionParam
     "save_full_newsletter",
     description=(
         "PANEL-ONLY: replace the entire newsletter body from the panel's single merged editor. "
-        "Splits the submitted document into blocks at heading boundaries (button/image/divider "
-        "blocks decode from their marker-link paragraphs — see richtext.py) — this is the one "
-        "path that lets a block be added/removed/reordered by editing the document directly. "
+        "Splits the submitted document into {heading, content} sections at heading boundaries "
+        "(see richtext.py) — this is the one path that lets a section be added/removed/reordered "
+        "by editing the document directly. "
         "Not for chat use — Webbee should use generate_newsletter or patch_newsletter to write content."
     ),
     action_type="write",

@@ -164,24 +164,18 @@ class PatchNewsletterParams(BaseModel):
 
 
 class UpdateNewsletterSectionParams(BaseModel):
-    """PANEL-ONLY manual block overwrite — not an AI writing step. Mirrors
-    Article Writer's SaveArticleSectionParams."""
+    """PANEL-ONLY manual section overwrite — not an AI writing step. Mirrors
+    Article Writer's SaveArticleSectionParams (plain heading+content)."""
     newsletter_id: str = Field(...)
     order_index: int = Field(..., ge=0)
-    block_type: Optional[str] = Field(default=None, description="One of: text, button, image, divider")
     heading: Optional[str] = Field(default=None, max_length=500)
     content: Optional[str] = Field(default=None, max_length=200000)
-    button_url: Optional[str] = Field(default=None, max_length=2000)
-    button_label: Optional[str] = Field(default=None, max_length=100)
-    image_url: Optional[str] = Field(default=None, max_length=2000)
-    image_alt: Optional[str] = Field(default=None, max_length=300)
 
 
 class SaveFullNewsletterParams(BaseModel):
     """PANEL-ONLY: the whole merged document from the single-window editor —
     not something Webbee should ever construct from chat. Mirrors Article
-    Writer's SaveFullArticleParams; button/image/divider blocks round-trip
-    through richtext.py's marker-paragraph encoding (see that module's
-    docstring)."""
+    Writer's SaveFullArticleParams; the document splits back into
+    {heading, content} sections at heading boundaries (see richtext.py)."""
     newsletter_id: str = Field(...)
     content_html: str = Field(default="", max_length=400000)

@@ -119,7 +119,7 @@ async def test_update_newsletter_section_requires_a_field(monkeypatch):
 
 
 @pytest.mark.asyncio
-async def test_save_full_newsletter_splits_document_into_blocks(monkeypatch):
+async def test_save_full_newsletter_splits_document_into_sections(monkeypatch):
     captured = {}
 
     async def fake_call(ctx, method, path, **kw):
@@ -130,18 +130,18 @@ async def test_save_full_newsletter_splits_document_into_blocks(monkeypatch):
     monkeypatch.setattr(handlers_newsletters, "call_backend", fake_call)
     html = (
         "<h2>Welcome</h2><p>Hello there.</p>"
-        "<p>\U0001F518 <a href=\"https://x.com/promo\">Get 50% off</a></p>"
-        "<p>\u25AC\u25AC\u25AC divider \u25AC\u25AC\u25AC</p>"
+        "<h2>Offer</h2><p>Grab [50% off](https://x.com/promo) today.</p>"
     )
     result = await handlers_newsletters.fn_save_full_newsletter(
         _ctx(), SaveFullNewsletterParams(newsletter_id="n1", content_html=html)
     )
     assert result.status == "success"
     sections = captured["sections"]
-    assert [s["block_type"] for s in sections] == ["text", "button", "divider"]
-    assert sections[0]["heading"] == "Welcome"
-    assert sections[1]["button_url"] == "https://x.com/promo"
-    assert sections[1]["button_label"] == "Get 50% off"
+    assert [s["heading"] for s in sections] == ["Welcome", "Offer"]
+    assert sections[0]["content"] == "Hello there."
+    assert "[50% off](https://x.com/promo)" in sections[1]["content"]
+    # No block-type / button fields \u2014 a newsletter is plain heading+content.
+    assert "block_type" not in sections[0]
 
 
 @pytest.mark.asyncio

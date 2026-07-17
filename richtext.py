@@ -1,20 +1,14 @@
-"""Plain-fields <-> HTML conversion for the panel's single merged RichEditor.
+"""Plain-text/lightweight-markdown <-> HTML conversion for the panel's
+single merged RichEditor (TipTap — its `content` prop is an HTML string).
 
-Unlike Article Writer's articles (plain heading+content sections only),
-a newsletter block has a block_type (text/button/image/divider) with distinct
-fields per kind. TipTap's confirmed-safe schema for this component instance
-is paragraphs, h1/h2/h3 headings, bold/italic, lists and <a href> links (see
-article-writer-extension/richtext.py's "Known SDK/frontend gap" note — custom
-tags/data-attributes are NOT guaranteed to survive a save round-trip). So
-non-text blocks are encoded as an ordinary paragraph containing a real,
-clickable <a href> link prefixed with a distinctive emoji marker — this is
-both 100% safe against the editor's schema AND directly readable/editable by
-a human (a real link they can click or retarget), not invisible markup.
-
-Markers (never legitimate body text, so detection on decode is unambiguous):
-  🔘 <button label>   -> button block  (link href = button_url)
-  🖼️ <image alt text>  -> image block   (link href = image_url)
-  ▬▬▬ divider ▬▬▬      -> divider block (own paragraph, no link)
+A newsletter is a plain heading+content document, exactly like an Article
+Writer article — no per-block types, no button/image/divider encoding, no
+emoji markers. The backend stores/scores plain text with light markdown
+(**bold**, *em*, "- " bullets, "[text](url)" links — exactly what the
+generation pipeline's prompts produce), so every read goes through to_html()
+and every save goes through from_html() to keep that contract unchanged end
+to end. Layout/buttons/images are the sending tool's job (MailerLite), not
+this writer's — here it's the copy.
 """
 from __future__ import annotations
 
@@ -29,25 +23,14 @@ _HTML_LINK = re.compile(r'<a\s+[^>]*href="([^"]*)"[^>]*>(.*?)</a>', re.DOTALL)
 _HTML_LIST = re.compile(r"<(ul|ol)>(.*?)</\1>", re.DOTALL)
 _HTML_LI = re.compile(r"<li>(.*?)</li>", re.DOTALL)
 _HTML_TAG = re.compile(r"<[^>]+>")
+_HTML_BLOCK = re.compile(r"<p>.*?</p>|<ul>.*?</ul>|<ol>.*?</ol>", re.DOTALL)
+# h1/h2/h3 all count as section boundaries — the editor's toolbar offers all
+# three and there's no reason to silently swallow an H1/H3 heading into the
+# previous section's body just because a section boundary was normalized to
+# h2 on the way in. Heading *level* itself isn't stored (schema only has a
+# plain-text `heading` column) — sections_to_html always re-emits h2.
 _HTML_HEADING = re.compile(r"<h[123]>(.*?)</h[123]>", re.DOTALL)
-
-BUTTON_MARK = "\U0001F518"  # 🔘
-IMAGE_MARK = "\U0001F5BC\uFE0F"  # 🖼️
-DIVIDER_TEXT = "\u25AC\u25AC\u25AC divider \u25AC\u25AC\u25AC"  # ▬▬▬ divider ▬▬▬
-
-_BUTTON_LINE = re.compile(rf"^{re.escape(BUTTON_MARK)}\s*\[([^\]]*)\]\(([^)]+)\)\s*$")
-_IMAGE_LINE = re.compile(rf"^{re.escape(IMAGE_MARK)}\s*\[([^\]]*)\]\(([^)]+)\)\s*$")
-
-# Walks the document in true order — a heading OR one <p>/<ul>/<ol> block,
-# whichever comes next — rather than splitting only at headings. This
-# matters because the content following one heading may contain several
-# DISTINCT blocks (plain text, then a button, then a divider): each marker
-# paragraph must become its own separate block, never merged into
-# surrounding text.
-_TOKEN = re.compile(
-    r"(?P<heading><h[123]>.*?</h[123]>)|(?P<block><p>.*?</p>|<ul>.*?</ul>|<ol>.*?</ol>)",
-    re.DOTALL,
-)
+_HTML_HEADING_SPLIT = re.compile(r"(<h[123]>.*?</h[123]>)", re.DOTALL)
 
 
 def _inline_to_html(text: str) -> str:
@@ -57,11 +40,17 @@ def _inline_to_html(text: str) -> str:
     return text
 
 
-def _text_to_html(text: str) -> str:
-    """Plain text (light markdown) -> HTML paragraphs/lists — same rules as
-    Article Writer's richtext.to_html()."""
+def to_html(text: str) -> str:
+    """Section plain text -> HTML for RichEditor display.
+
+    Adjacent all-bullet blocks get merged into ONE <ul> even when the source
+    put a blank line between each "- " item (each would otherwise split()
+    into its own single-item paragraph and render as a separate one-item
+    list) — genuine prose paragraphs still stay split on blank lines.
+    """
     if not text or not text.strip():
         return ""
+
     grouped: list[tuple[bool, list[str]]] = []
     for para in re.split(r"\n\s*\n", text.strip()):
         lines = [ln.strip() for ln in para.split("\n") if ln.strip()]
@@ -98,144 +87,87 @@ def _block_to_text(block: str) -> str:
     return _HTML_TAG.sub("", inner).strip()
 
 
-def _text_from_html(html: str) -> str:
-    """Convert ONE block's raw HTML (a single <p>/<ul>/<ol>, or a run of
-    them) back to plain text with light markdown."""
+def from_html(html: str) -> str:
+    """RichEditor HTML -> plain text with light markdown, the shape the
+    backend's mechanical checks / grounding / patch pipeline expects.
+
+    Converts inline formatting first, then splits into top-level <p>/<ul>/<ol>
+    blocks and rejoins them with blank lines — this is what lets a paragraph
+    sitting right next to a list round-trip correctly instead of only
+    matching two adjacent <p> tags.
+    """
     if not html or not html.strip():
         return ""
     text = _HTML_LINK.sub(lambda m: f"[{_HTML_TAG.sub('', m.group(2))}]({m.group(1)})", html)
     text = _HTML_STRONG.sub(r"**\1**", text)
     text = _HTML_EM.sub(r"*\1*", text)
 
-    blocks = re.findall(r"<p>.*?</p>|<ul>.*?</ul>|<ol>.*?</ol>", text, re.DOTALL)
+    blocks = _HTML_BLOCK.findall(text)
     if not blocks:
+        # No recognizable block tags — plain text (e.g. from chat) passes through untouched.
         return _unescape(_HTML_TAG.sub("", text)).strip()
 
     converted = [_block_to_text(b) for b in blocks]
     return _unescape("\n\n".join(b for b in converted if b))
 
 
-def block_body_to_html(s: dict) -> str:
-    """One block's body (no heading) -> its HTML paragraph(s)."""
-    block_type = s.get("block_type", "text")
-    if block_type == "button":
-        label = (s.get("button_label") or "Click here").strip() or "Click here"
-        url = (s.get("button_url") or "#").strip() or "#"
-        return f'<p>{BUTTON_MARK} <a href="{url}">{label}</a></p>'
-    if block_type == "image":
-        alt = (s.get("image_alt") or "Image").strip() or "Image"
-        url = (s.get("image_url") or "#").strip() or "#"
-        return f'<p>{IMAGE_MARK} <a href="{url}">{alt}</a></p>'
-    if block_type == "divider":
-        return f"<p>{DIVIDER_TEXT}</p>"
-    return _text_to_html(s.get("content") or "")
+def to_export_text(sections: list[dict]) -> str:
+    """Plain-text export — human-legible rendering for any future export
+    function. Strips markdown syntax rather than show literal ** and - as
+    clutter; a heading gets a plain-text-legible treatment (upper-case +
+    underline) instead of trying to fake bold."""
+    parts = []
+    for section in sections:
+        heading = (section.get("heading") or "").strip()
+        if heading:
+            parts.append(f"{heading.upper()}\n{'-' * len(heading)}")
+        content = section.get("content") or ""
+        content = _BOLD.sub(r"\1", content)
+        content = _ITALIC.sub(r"\1", content)
+        content = re.sub(r"(?m)^[-*] ", "• ", content)  # "- item" -> "• item"
+        if content:
+            parts.append(content)
+    return "\n\n".join(parts)
 
 
 def sections_to_html(sections: list[dict]) -> str:
-    """Merge a newsletter's blocks into ONE HTML document — the panel's
-    single-window editor. Each block's heading becomes a real <h2>; the body
-    is either normal rich text (text blocks) or a marker paragraph carrying
-    a real link (button/image/divider — see module docstring)."""
+    """Merge a newsletter's sections into ONE HTML document — the panel's
+    single-window editor. Each section's heading becomes a real <h2>, so
+    TipTap's own heading formatting is what carries section boundaries."""
     parts = []
-    for s in sections:
-        heading = (s.get("heading") or "").strip()
+    for section in sections:
+        heading = (section.get("heading") or "").strip()
         if heading:
             parts.append(f"<h2>{heading}</h2>")
-        parts.append(block_body_to_html(s))
+        parts.append(to_html(section.get("content") or ""))
     return "".join(parts)
 
 
-def _paragraph_to_block(block_html: str) -> dict | None:
-    """Decide whether ONE <p>/<ul>/<ol> chunk is a button/image/divider
-    marker or plain text. Returns None for an empty/whitespace-only chunk
-    (nothing to record). Markers always live in their own paragraph (see
-    block_body_to_html), so a single chunk never mixes a marker with other
-    text — no disambiguation needed within one call."""
-    plain = _text_from_html(block_html).strip()
-    if not plain:
-        return None
-
-    if plain == DIVIDER_TEXT:
-        return {"block_type": "divider", "content": ""}
-
-    m = _BUTTON_LINE.match(plain)
-    if m:
-        return {"block_type": "button", "content": "", "button_label": m.group(1), "button_url": m.group(2)}
-
-    m = _IMAGE_LINE.match(plain)
-    if m:
-        return {"block_type": "image", "content": "", "image_alt": m.group(1), "image_url": m.group(2)}
-
-    return {"block_type": "text", "content": plain}
-
-
 def html_to_sections(html: str) -> list[dict]:
-    """Split ONE merged document back into block dicts — the inverse of
-    sections_to_html(). A heading attaches to whichever block comes right
-    after it; consecutive plain-text/list paragraphs under one heading are
-    merged into that one text block's content, but a button/image/divider
-    marker always becomes its own separate block (never merged with
-    surrounding text, and it "uses up" the pending heading so a later text
-    paragraph under the same heading starts a fresh heading-less block).
-    Each resulting block is fully shaped for NewsletterSectionInput
-    (block_type + only the fields that type uses)."""
+    """Split ONE merged document back into {heading, content} sections at
+    <h1>/<h2>/<h3> boundaries — the inverse of sections_to_html(). Content typed
+    before the first heading (if any) becomes a heading-less first section;
+    this is how a genuinely free-edited document (headings added/removed/
+    reordered by the user) round-trips instead of only ever matching the
+    original section count."""
     if not html or not html.strip():
         return []
 
+    parts = _HTML_HEADING_SPLIT.split(html)
     sections: list[dict] = []
-    pending_heading: str | None = None
-    pending_text_htmls: list[str] = []
-
-    def flush_text() -> None:
-        nonlocal pending_heading, pending_text_htmls
-        if pending_text_htmls:
-            content = _text_from_html("".join(pending_text_htmls)).strip()
-            if content:
-                sections.append({"block_type": "text", "content": content, "heading": pending_heading})
-                pending_heading = None
-            pending_text_htmls = []
-
-    for m in _TOKEN.finditer(html):
-        if m.group("heading"):
-            flush_text()
-            pending_heading = _unescape(_HTML_TAG.sub("", m.group("heading"))).strip()
+    heading: str | None = None
+    body = ""
+    for part in parts:
+        if not part or not part.strip():
             continue
-        block_html = m.group("block")
-        marker = _paragraph_to_block(block_html)
-        if marker is None:
-            continue
-        if marker["block_type"] == "text":
-            pending_text_htmls.append(block_html)
+        match = _HTML_HEADING.match(part)
+        if match:
+            if heading is not None or body.strip():
+                sections.append({"heading": heading, "content": from_html(body)})
+            heading = _unescape(_HTML_TAG.sub("", match.group(1))).strip()
+            body = ""
         else:
-            flush_text()
-            marker["heading"] = pending_heading
-            pending_heading = None
-            sections.append(marker)
-
-    flush_text()
+            body += part
+    if heading is not None or body.strip():
+        sections.append({"heading": heading, "content": from_html(body)})
     return sections
-
-
-def to_export_text(sections: list[dict]) -> str:
-    """Plain-text export — human-legible rendering for any future export
-    function, mirrors Article Writer's to_export_text()."""
-    parts = []
-    for s in sections:
-        heading = (s.get("heading") or "").strip()
-        if heading:
-            parts.append(f"{heading.upper()}\n{'-' * len(heading)}")
-        block_type = s.get("block_type", "text")
-        if block_type == "button":
-            parts.append(f"[BUTTON] {s.get('button_label') or 'Click here'} -> {s.get('button_url') or ''}")
-        elif block_type == "image":
-            parts.append(f"[IMAGE] {s.get('image_alt') or 'Image'} -> {s.get('image_url') or ''}")
-        elif block_type == "divider":
-            parts.append("----------")
-        else:
-            content = s.get("content") or ""
-            content = _BOLD.sub(r"\1", content)
-            content = _ITALIC.sub(r"\1", content)
-            content = re.sub(r"(?m)^[-*] ", "\u2022 ", content)
-            if content:
-                parts.append(content)
-    return "\n\n".join(parts)

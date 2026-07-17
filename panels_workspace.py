@@ -7,18 +7,14 @@ many newsletters or how long they are. This is the ONLY place full
 newsletter bodies are ever displayed — chat functions never receive them
 (see response_models.NewsletterSummaryRecord's docstring).
 
-A newsletter block has a block_type (text/button/image/divider) with
-distinct fields per kind — unlike Article Writer's plain heading+content
-sections. This panel still edits the WHOLE newsletter as one seamless
-merged ui.RichEditor document (richtext.sections_to_html /
-richtext.html_to_sections), not N separate per-block forms: button/image/
-divider blocks round-trip as an ordinary paragraph containing a real,
-clickable link with a distinctive marker (see richtext.py's module
-docstring for why — TipTap's confirmed-safe schema has no native
-button/divider node, so this is the safest AND most human-editable
-encoding). Saving posts the whole document to save_full_newsletter, which
-splits it back into blocks at heading boundaries — exactly Article
-Writer's save_full_article contract.
+A newsletter is a plain heading+content document, exactly like an Article
+Writer article. The panel edits the WHOLE newsletter as one seamless merged
+ui.RichEditor document (richtext.sections_to_html / richtext.html_to_sections)
+— headings are real <h2>s inside the same editor, not N separate per-section
+forms. Saving posts the whole document to save_full_newsletter, which splits
+it back into {heading, content} sections at heading boundaries — exactly
+Article Writer's save_full_article contract. Layout/buttons/images are the
+sending tool's job (MailerLite); here it's the copy.
 
 Routing: `__panel__workspace` accepts (view, project_id, newsletter_id) as
 plain kwargs (SDK panel mechanism — see imperal_sdk.extension.Extension.panel).
@@ -84,13 +80,11 @@ async def _render_newsletters_view(ctx, project_id: str) -> ui.UINode:
 
 def _newsletter_editor(newsletter_id: str, sections: list[dict]) -> ui.UINode:
     """One seamless editable document — headings are real <h2>s inside the
-    same RichEditor, not separate boxes/cards per block. Button/image/
-    divider blocks appear as an ordinary paragraph carrying a real, marked
-    link (see richtext.py) so they're still directly visible and editable,
-    just not a separate form. Saving splits it back into blocks at heading
-    boundaries (richtext.html_to_sections) — adding/removing/reordering a
-    heading here is how blocks get added/removed/reordered, exactly like
-    Article Writer's single-editor contract."""
+    same RichEditor, not separate boxes/cards per section. Saving splits it
+    back into {heading, content} sections at heading boundaries
+    (richtext.html_to_sections) — adding/removing/reordering a heading here
+    is how sections get added/removed/reordered, exactly like Article
+    Writer's single-editor contract."""
     return ui.Form(
         action="save_full_newsletter",
         submit_label="Save newsletter",
