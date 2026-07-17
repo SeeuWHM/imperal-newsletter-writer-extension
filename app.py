@@ -95,6 +95,19 @@ chat = ChatExtension(
     max_rounds=10,
 )
 
+# File Mage L3 — declares this app as a valid destination when the user has
+# an uploaded file (via the file-reader system ext) and wants it turned into
+# a newsletter. `arg="topic"` maps the file's EXTRACTED TEXT into the same
+# `topic` field a human would type — generate_newsletter's own quality-gate
+# pipeline treats it exactly like any other topic, no bespoke ingestion path.
+ext.file_sink(
+    "generate_newsletter",
+    accepts=["application/pdf", "text/*", "doc"],
+    arg="topic",
+    arg_kind="text",
+    description="Turn an uploaded document into a new email newsletter draft",
+)
+
 ext.secret(
     name="backend_jwt",
     description=(

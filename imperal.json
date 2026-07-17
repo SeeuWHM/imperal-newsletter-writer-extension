@@ -1,6 +1,6 @@
 {
   "manifest_schema_version": 3,
-  "sdk_version": "5.9.9",
+  "sdk_version": "5.9.11",
   "app_id": "imperal-newsletter-writer-extension",
   "version": "1.5.0",
   "name": "Newsletter Writer",
@@ -3391,6 +3391,19 @@
       "max_bytes": 2048,
       "scope": "app",
       "env_fallback": "IMPERAL_APPSECRET_NEWSLETTER_WRITER_BACKEND_JWT"
+    }
+  ],
+  "file_sinks": [
+    {
+      "tool": "generate_newsletter",
+      "accepts": [
+        "application/pdf",
+        "text/*",
+        "doc"
+      ],
+      "arg": "topic",
+      "arg_kind": "text",
+      "description": "Turn an uploaded document into a new email newsletter draft"
     }
   ],
   "panels": [
