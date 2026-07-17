@@ -18,6 +18,7 @@ from imperal_sdk.types import ActionResult
 
 from app import chat
 from api_client import call_backend, _err
+from navstate import save_nav
 from params import (
     CreateProjectParams, UpdateProjectContextParams, ProjectIdParams,
     AddReferenceLinkParams, RemoveReferenceLinkParams,
@@ -162,6 +163,37 @@ async def fn_delete_project(ctx, params: ProjectIdParams) -> ActionResult:
     return ActionResult.success(
         data=DeletedResponse(id=params.project_id), summary="Project deleted.",
         refresh_panels=["sidebar", "workspace"],
+    )
+
+
+@chat.function(
+    "open_project",
+    description=(
+        "PANEL-ONLY: switch the currently-open project (sidebar detail + workspace board). Not "
+        "for chat use — this is pure UI navigation state, nothing about the project itself "
+        "changes."
+    ),
+    action_type="write",
+    event="newsletter-writer.project.opened",
+    effects=["update:project"],
+    data_model=ProjectRecord,
+)
+async def fn_open_project(ctx, params: ProjectIdParams) -> ActionResult:
+    """Persist the newly-selected project as nav state and refresh both the
+    sidebar (which shows the active project's expanded detail) and the
+    workspace (its newsletter board) — a plain ui.Call("__panel__workspace",
+    ...) only ever refreshes the one panel it targets, so the sidebar was
+    silently stuck on the previous project until a full page reload (live
+    bug, 2026-07-18). newsletter_id is explicitly reset to "" — never carried
+    over from whatever newsletter was previously open in a different
+    project."""
+    data = await call_backend(ctx, "GET", f"/v1/projects/{params.project_id}")
+    if "error" in data:
+        return _err(data)
+    await save_nav(ctx, {"view": "newsletters", "project_id": params.project_id, "newsletter_id": ""})
+    record = _to_record(data)
+    return ActionResult.success(
+        data=record, summary=f'Opened "{record.name}".', refresh_panels=["sidebar", "workspace"],
     )
 
 
