@@ -49,7 +49,7 @@ SERVER_URL = os.environ.get("NEWSLETTER_WRITER_BACKEND_URL", "") or "https://api
 
 ext = Extension(
     "imperal-newsletter-writer-extension",
-    version="1.1.0",
+    version="1.2.0",
     display_name="Newsletter Writer",
     description=(
         "Project-based email newsletter writing: keep per-project context (brand voice, goals, "

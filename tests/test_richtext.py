@@ -10,7 +10,10 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(ROOT))
 
-from richtext import sections_to_html, html_to_sections, to_html, from_html, to_export_text
+from richtext import (
+    sections_to_html, html_to_sections, to_html, from_html, to_export_text,
+    document_to_html, html_to_document,
+)
 
 
 def test_sections_to_html_text_block_with_heading():
@@ -84,3 +87,40 @@ def test_to_export_text_strips_markdown_and_underlines_headings():
     assert "SALE\n----" in out
     assert "Get 50% off" in out
     assert "• fast" in out
+
+
+def test_document_to_html_puts_subject_as_leading_h1():
+    sections = [{"heading": "Intro", "content": "Hello."}]
+    html = document_to_html("Big Sale", sections)
+    assert html == "<h1>Big Sale</h1><h2>Intro</h2><p>Hello.</p>"
+
+
+def test_document_to_html_no_subject_is_body_only():
+    assert document_to_html("", [{"heading": None, "content": "Hi."}]) == "<p>Hi.</p>"
+
+
+def test_html_to_document_extracts_subject_and_sections():
+    html = "<h1>Big Sale</h1><h2>Intro</h2><p>Hello **there**.</p><h2>Offer</h2><p>Grab it.</p>"
+    subject, sections = html_to_document(html)
+    assert subject == "Big Sale"
+    assert [s["heading"] for s in sections] == ["Intro", "Offer"]
+    assert sections[0]["content"] == "Hello **there**."
+
+
+def test_html_to_document_round_trips_with_document_to_html():
+    subject = "Welcome aboard"
+    sections = [
+        {"heading": "Hi", "content": "Thanks for joining."},
+        {"heading": "Next", "content": "- step one\n- step two"},
+    ]
+    subj2, sec2 = html_to_document(document_to_html(subject, sections))
+    assert subj2 == subject
+    assert [s["heading"] for s in sec2] == ["Hi", "Next"]
+    assert sec2[1]["content"] == "- step one\n- step two"
+
+
+def test_html_to_document_no_h1_yields_empty_subject():
+    # No leading <h1> — caller keeps the existing subject rather than blank it.
+    subject, sections = html_to_document("<h2>Body</h2><p>Text.</p>")
+    assert subject == ""
+    assert sections[0]["heading"] == "Body"

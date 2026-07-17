@@ -31,6 +31,7 @@ _HTML_BLOCK = re.compile(r"<p>.*?</p>|<ul>.*?</ul>|<ol>.*?</ol>", re.DOTALL)
 # plain-text `heading` column) — sections_to_html always re-emits h2.
 _HTML_HEADING = re.compile(r"<h[123]>(.*?)</h[123]>", re.DOTALL)
 _HTML_HEADING_SPLIT = re.compile(r"(<h[123]>.*?</h[123]>)", re.DOTALL)
+_HTML_H1 = re.compile(r"<h1>(.*?)</h1>", re.DOTALL)
 
 
 def _inline_to_html(text: str) -> str:
@@ -171,3 +172,35 @@ def html_to_sections(html: str) -> list[dict]:
     if heading is not None or body.strip():
         sections.append({"heading": heading, "content": from_html(body)})
     return sections
+
+
+def document_to_html(subject: str, sections: list[dict]) -> str:
+    """The WHOLE newsletter as one editor document: the subject is the leading
+    <h1>, then the body (each section's heading as <h2>, content as prose).
+    The subject lives inside the same editor as everything else — there is no
+    separate subject field in the panel. What is the subject vs the body is
+    left to whoever sends it (MailerLite via a connector); here it is all one
+    document."""
+    subject = (subject or "").strip()
+    parts = []
+    if subject:
+        parts.append(f"<h1>{subject}</h1>")
+    parts.append(sections_to_html(sections))
+    return "".join(parts)
+
+
+def html_to_document(html: str) -> tuple[str, list[dict]]:
+    """Inverse of document_to_html: the FIRST <h1> is the subject; everything
+    after it splits into {heading, content} sections (at <h2>/<h3> boundaries).
+    Returns (subject, sections). subject is "" when the document has no leading
+    <h1> — the caller must then keep the existing subject rather than blank it
+    (a newsletter must always have a subject)."""
+    if not html or not html.strip():
+        return "", []
+    m = _HTML_H1.search(html)
+    subject = ""
+    rest = html
+    if m:
+        subject = _unescape(_HTML_TAG.sub("", m.group(1))).strip()
+        rest = html[:m.start()] + html[m.end():]
+    return subject, html_to_sections(rest)

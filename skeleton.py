@@ -13,13 +13,23 @@ from api_client import call_backend
 @ext.skeleton("newsletter_writer_overview", ttl=60,
               description="Newsletter Writer projects + newsletter counts by status — degrades to zeros if backend unreachable")
 async def skeleton_refresh_overview(ctx) -> dict:
+    # Skeleton contract: return {"response": <flat-scalars dict>} — the outer
+    # "response" wrapper is MANDATORY (returning the inner dict directly is a
+    # federal error the kernel rejects, which is what made this skeleton fail
+    # to save). Keep it small: scalars + counts only, never full project rows.
     projects_data = await call_backend(ctx, "GET", "/v1/projects", params={"limit": 100, "offset": 0})
     projects = projects_data.get("data") if isinstance(projects_data.get("data"), list) else []
     projects = projects or []
 
-    newsletters_data = await call_backend(ctx, "GET", "/v1/newsletters", params={"limit": 200, "offset": 0})
+    # limit must be <= 100 (backend caps it via Query(le=100)); 200 returned a
+    # 422 every refresh, so newsletter counts never populated. Use the paged
+    # `total` for the true count regardless of page size.
+    newsletters_data = await call_backend(ctx, "GET", "/v1/newsletters", params={"limit": 100, "offset": 0})
     newsletters = newsletters_data.get("data") if isinstance(newsletters_data.get("data"), list) else []
     newsletters = newsletters or []
+
+    project_count = projects_data.get("total", len(projects)) if isinstance(projects_data, dict) else len(projects)
+    newsletter_count = newsletters_data.get("total", len(newsletters)) if isinstance(newsletters_data, dict) else len(newsletters)
 
     by_status = {"idea": 0, "writing": 0, "review": 0, "scheduled": 0, "sent": 0}
     for n in newsletters:
@@ -35,16 +45,15 @@ async def skeleton_refresh_overview(ctx) -> dict:
         instruction = "No projects yet — create one with create_project before writing newsletters."
     else:
         instruction = (
-            f"{len(projects)} project(s), {len(newsletters)} newsletter(s) total: "
+            f"{project_count} project(s), {newsletter_count} newsletter(s) total: "
             + ", ".join(f"{v} {k}" for k, v in by_status.items())
             + ". Use list_projects/list_newsletters for details, generate_newsletter to write, "
               "patch_newsletter for targeted edits. Full bodies are edited in the panel only."
         )
 
-    return {
-        "projects": projects[:20],
-        "newsletter_counts_by_status": by_status,
-        "total_projects": len(projects),
-        "total_newsletters": len(newsletters),
+    return {"response": {
+        "project_count": project_count,
+        "newsletter_count": newsletter_count,
+        "by_status": by_status,
         "instruction": instruction,
-    }
+    }}

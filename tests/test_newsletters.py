@@ -119,16 +119,21 @@ async def test_update_newsletter_section_requires_a_field(monkeypatch):
 
 
 @pytest.mark.asyncio
-async def test_save_full_newsletter_splits_document_into_sections(monkeypatch):
+async def test_save_full_newsletter_splits_subject_and_sections(monkeypatch):
     captured = {}
 
     async def fake_call(ctx, method, path, **kw):
-        assert method == "PUT" and path == "/v1/newsletters/n1/sections"
-        captured["sections"] = kw["json"]["sections"]
-        return {}
+        if method == "PUT" and path == "/v1/newsletters/n1/sections":
+            captured["sections"] = kw["json"]["sections"]
+            return {}
+        if method == "PATCH" and path == "/v1/newsletters/n1/meta":
+            captured["subject"] = kw["json"]["subject"]
+            return {}
+        raise AssertionError(f"unexpected call {method} {path}")
 
     monkeypatch.setattr(handlers_newsletters, "call_backend", fake_call)
     html = (
+        "<h1>Spring Sale</h1>"
         "<h2>Welcome</h2><p>Hello there.</p>"
         "<h2>Offer</h2><p>Grab [50% off](https://x.com/promo) today.</p>"
     )
@@ -136,12 +141,32 @@ async def test_save_full_newsletter_splits_document_into_sections(monkeypatch):
         _ctx(), SaveFullNewsletterParams(newsletter_id="n1", content_html=html)
     )
     assert result.status == "success"
+    # Subject is the leading <h1>, persisted via /meta.
+    assert captured["subject"] == "Spring Sale"
     sections = captured["sections"]
     assert [s["heading"] for s in sections] == ["Welcome", "Offer"]
     assert sections[0]["content"] == "Hello there."
     assert "[50% off](https://x.com/promo)" in sections[1]["content"]
     # No block-type / button fields \u2014 a newsletter is plain heading+content.
     assert "block_type" not in sections[0]
+
+
+@pytest.mark.asyncio
+async def test_save_full_newsletter_without_h1_keeps_subject(monkeypatch):
+    calls = []
+
+    async def fake_call(ctx, method, path, **kw):
+        calls.append((method, path))
+        return {}
+
+    monkeypatch.setattr(handlers_newsletters, "call_backend", fake_call)
+    # No leading <h1> -> subject must NOT be touched (no PATCH /meta call).
+    result = await handlers_newsletters.fn_save_full_newsletter(
+        _ctx(), SaveFullNewsletterParams(newsletter_id="n1", content_html="<h2>Body</h2><p>Text.</p>")
+    )
+    assert result.status == "success"
+    assert ("PUT", "/v1/newsletters/n1/sections") in calls
+    assert ("PATCH", "/v1/newsletters/n1/meta") not in calls
 
 
 @pytest.mark.asyncio

@@ -2,7 +2,7 @@
   "manifest_schema_version": 3,
   "sdk_version": "5.9.6",
   "app_id": "imperal-newsletter-writer-extension",
-  "version": "1.1.0",
+  "version": "1.2.0",
   "name": "Newsletter Writer",
   "description": "Project-based email newsletter writing: keep per-project context (brand voice, goals, reference links, reusable 'fill' items like promo codes) and have newsletters written cheaply, with mechanical quality gates and self-review, grounded in that context. Read/edit full newsletters in the panel — chat never touches full bodies.",
   "icon": "icon.svg",
@@ -2455,7 +2455,7 @@
     },
     {
       "name": "save_full_newsletter",
-      "description": "PANEL-ONLY: replace the entire newsletter body from the panel's single merged editor. Splits the submitted document into {heading, content} sections at heading boundaries (see richtext.py) — this is the one path that lets a section be added/removed/reordered by editing the document directly. Not for chat use — Webbee should use generate_newsletter or patch_newsletter to write content.",
+      "description": "PANEL-ONLY: replace the entire newsletter from the panel's single merged editor. The leading <h1> is the subject; everything after it splits into {heading, content} sections at heading boundaries (see richtext.py). Persists BOTH the subject and the body in one save — this is the one path that lets the subject or a section be edited/added/removed/reordered by editing the document directly. Not for chat use — Webbee should use generate_newsletter or patch_newsletter to write content.",
       "action_type": "write",
       "chain_callable": true,
       "effects": [

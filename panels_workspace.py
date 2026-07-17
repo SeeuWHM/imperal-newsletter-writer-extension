@@ -29,7 +29,7 @@ from imperal_sdk import ui
 from app import ext
 from api_client import call_backend
 from navstate import load_nav, save_nav
-from richtext import sections_to_html
+from richtext import document_to_html
 
 STATUS_ORDER = ["idea", "writing", "review", "scheduled", "sent"]
 STATUS_COLOR = {"idea": "gray", "writing": "blue", "review": "yellow", "scheduled": "purple", "sent": "green"}
@@ -78,19 +78,19 @@ async def _render_newsletters_view(ctx, project_id: str) -> ui.UINode:
     return ui.Grid(columns=len(STATUS_ORDER), gap=3, children=columns)
 
 
-def _newsletter_editor(newsletter_id: str, sections: list[dict]) -> ui.UINode:
-    """One seamless editable document — headings are real <h2>s inside the
-    same RichEditor, not separate boxes/cards per section. Saving splits it
-    back into {heading, content} sections at heading boundaries
-    (richtext.html_to_sections) — adding/removing/reordering a heading here
-    is how sections get added/removed/reordered, exactly like Article
-    Writer's single-editor contract."""
+def _newsletter_editor(newsletter_id: str, subject: str, sections: list[dict]) -> ui.UINode:
+    """One seamless editable document — the SUBJECT is the leading <h1> and
+    each section heading is an <h2>, all inside the same RichEditor. No
+    separate subject field, no separate save button per part: Save writes the
+    whole thing at once — the first <h1> becomes the subject, the rest becomes
+    the body (richtext.html_to_document). What is the subject vs the body is
+    left to whoever sends it (MailerLite via a connector)."""
     return ui.Form(
         action="save_full_newsletter",
         submit_label="Save newsletter",
         defaults={"newsletter_id": newsletter_id},
         children=[
-            ui.RichEditor(param_name="content_html", content=sections_to_html(sections)),
+            ui.RichEditor(param_name="content_html", content=document_to_html(subject, sections)),
         ],
     )
 
@@ -123,15 +123,6 @@ async def _render_newsletter_view(ctx, project_id: str, newsletter_id: str) -> u
         *([ui.Badge(label=f.get("code", str(f)) if isinstance(f, dict) else str(f), color="yellow") for f in flags]),
     ])
 
-    meta_form = ui.Form(
-        action="update_newsletter_meta", submit_label="Update subject/preheader",
-        defaults={"newsletter_id": newsletter_id},
-        children=[
-            ui.Input(param_name="subject", value=data.get("subject") or "", placeholder="Subject line"),
-            ui.Input(param_name="preheader", value=data.get("preheader") or "", placeholder="Preheader"),
-        ],
-    )
-
     status_form = ui.Form(
         action="update_newsletter_status", submit_label="Update status",
         defaults={"newsletter_id": newsletter_id},
@@ -142,7 +133,15 @@ async def _render_newsletter_view(ctx, project_id: str, newsletter_id: str) -> u
         ],
     )
 
+    # Subject lives INSIDE the editor as the leading <h1> — no separate
+    # subject/preheader form. The preheader is still generated + stored by the
+    # backend (and Webbee can adjust it via chat / a connector uses it as the
+    # inbox preview line); it's just not a manual field cluttering the panel.
+    header_nodes: list = []
     if not sections:
+        # Nothing to edit yet: show the subject for orientation + the generate
+        # form. Once generated, the subject becomes the editor's <h1> instead.
+        header_nodes.append(ui.Header(text=data.get("subject") or "(untitled)", level=4))
         body = ui.Form(
             action="generate_newsletter", submit_label="Generate first draft",
             defaults={"newsletter_id": newsletter_id},
@@ -155,15 +154,13 @@ async def _render_newsletter_view(ctx, project_id: str, newsletter_id: str) -> u
         )
     else:
         # No "Patch with AI" form here — that's Webbee's job via chat
-        # (patch_newsletter); this panel edits the merged document directly,
-        # it doesn't duplicate Webbee's own AI-writing actions.
-        body = _newsletter_editor(newsletter_id, sections)
+        # (patch_newsletter); this panel edits the merged document directly.
+        body = _newsletter_editor(newsletter_id, data.get("subject") or "", sections)
 
     return ui.Stack(gap=3, className="px-4 pb-4", children=[
         top_bar,
-        ui.Header(text=data.get("subject") or "(untitled)", level=4),
+        *header_nodes,
         badges,
-        meta_form,
         status_form,
         ui.Divider(),
         body,

@@ -23,7 +23,7 @@ from params import (
     SaveFullNewsletterParams,
 )
 from response_models import NewsletterSummaryRecord, NewsletterListResponse, DeletedResponse
-from richtext import html_to_sections
+from richtext import html_to_document
 
 
 def _err(data: dict) -> ActionResult:
@@ -173,10 +173,11 @@ async def fn_update_newsletter_section(ctx, params: UpdateNewsletterSectionParam
 @chat.function(
     "save_full_newsletter",
     description=(
-        "PANEL-ONLY: replace the entire newsletter body from the panel's single merged editor. "
-        "Splits the submitted document into {heading, content} sections at heading boundaries "
-        "(see richtext.py) — this is the one path that lets a section be added/removed/reordered "
-        "by editing the document directly. "
+        "PANEL-ONLY: replace the entire newsletter from the panel's single merged editor. The "
+        "leading <h1> is the subject; everything after it splits into {heading, content} sections "
+        "at heading boundaries (see richtext.py). Persists BOTH the subject and the body in one "
+        "save — this is the one path that lets the subject or a section be edited/added/removed/"
+        "reordered by editing the document directly. "
         "Not for chat use — Webbee should use generate_newsletter or patch_newsletter to write content."
     ),
     action_type="write",
@@ -185,14 +186,23 @@ async def fn_update_newsletter_section(ctx, params: UpdateNewsletterSectionParam
     data_model=DeletedResponse,
 )
 async def fn_save_full_newsletter(ctx, params: SaveFullNewsletterParams) -> ActionResult:
-    """Panel's single-editor Save — split the merged HTML back into blocks."""
-    sections = html_to_sections(params.content_html)
+    """Panel's single-editor Save — split the merged HTML into subject (<h1>)
+    + body sections, and persist both."""
+    subject, sections = html_to_document(params.content_html)
     data = await call_backend(
         ctx, "PUT", f"/v1/newsletters/{params.newsletter_id}/sections",
         json={"sections": sections},
     )
     if "error" in data:
         return _err(data)
+    # Persist the subject too (never blank it — if the editor has no leading
+    # <h1>, keep whatever subject the backend already has).
+    if subject:
+        meta = await call_backend(
+            ctx, "PATCH", f"/v1/newsletters/{params.newsletter_id}/meta", json={"subject": subject},
+        )
+        if isinstance(meta, dict) and "error" in meta:
+            return _err(meta)
     return ActionResult.success(
         data=DeletedResponse(deleted=False), summary="Newsletter saved.", refresh_panels=["workspace"],
     )
