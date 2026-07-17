@@ -189,6 +189,69 @@ def document_to_html(subject: str, sections: list[dict]) -> str:
     return "".join(parts)
 
 
+_MD_H1 = re.compile(r"^#\s+(.+?)\s*$")
+_MD_HEADING = re.compile(r"^#{2,3}\s+(.+?)\s*$")
+
+
+def document_to_markdown(subject: str, sections: list[dict]) -> str:
+    """The whole newsletter as plain Markdown for Webbee to read/edit: the
+    subject is the leading `# ` line, each section heading is a `## ` line, and
+    the body keeps the light markdown the backend stores (**bold**, *em*, "- "
+    bullets, [text](url) links). Round-trips through markdown_to_document."""
+    parts: list[str] = []
+    subj = (subject or "").strip()
+    if subj:
+        parts.append(f"# {subj}")
+    for s in sections:
+        heading = (s.get("heading") or "").strip()
+        if heading:
+            parts.append(f"## {heading}")
+        content = (s.get("content") or "").strip()
+        if content:
+            parts.append(content)
+    return "\n\n".join(parts)
+
+
+def markdown_to_document(md: str) -> tuple[str, list[dict]]:
+    """Inverse of document_to_markdown — the format Webbee submits when editing.
+    The FIRST `# ` line is the subject; `## `/`### ` lines start sections;
+    everything else is verbatim section content (already the stored light-
+    markdown shape). Deterministic — no LLM, so what Webbee writes is exactly
+    what gets stored. Returns (subject, sections); subject is "" if there is no
+    leading `# ` (caller keeps the existing subject)."""
+    if not md or not md.strip():
+        return "", []
+    subject = ""
+    sections: list[dict] = []
+    cur_heading: str | None = None
+    cur_lines: list[str] = []
+    first_h1_taken = False
+
+    def flush() -> None:
+        nonlocal cur_heading, cur_lines
+        content = "\n".join(cur_lines).strip()
+        if cur_heading is not None or content:
+            sections.append({"heading": cur_heading, "content": content})
+        cur_heading = None
+        cur_lines = []
+
+    for line in md.splitlines():
+        m_h1 = _MD_H1.match(line)
+        m_h = _MD_HEADING.match(line)
+        if m_h1 and not first_h1_taken:
+            flush()
+            subject = m_h1.group(1).strip()
+            first_h1_taken = True
+            continue
+        if m_h or (m_h1 and first_h1_taken):
+            flush()
+            cur_heading = (m_h.group(1) if m_h else m_h1.group(1)).strip()
+            continue
+        cur_lines.append(line)
+    flush()
+    return subject, sections
+
+
 def html_to_document(html: str) -> tuple[str, list[dict]]:
     """Inverse of document_to_html: the FIRST <h1> is the subject; everything
     after it splits into {heading, content} sections (at <h2>/<h3> boundaries).

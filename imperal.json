@@ -2,7 +2,7 @@
   "manifest_schema_version": 3,
   "sdk_version": "5.9.6",
   "app_id": "imperal-newsletter-writer-extension",
-  "version": "1.3.0",
+  "version": "1.4.0",
   "name": "Newsletter Writer",
   "description": "Project-based email newsletter writing: keep per-project context (brand voice, goals, reference links, reusable 'fill' items like promo codes) and have newsletters written cheaply, with mechanical quality gates and self-review, grounded in that context. Read/edit full newsletters in the panel — chat never touches full bodies.",
   "icon": "icon.svg",
@@ -2511,6 +2511,226 @@
           }
         },
         "title": "DeletedResponse",
+        "type": "object"
+      },
+      "event": "newsletter-writer.newsletter.section_saved",
+      "background": false,
+      "long_running": false,
+      "scopes": [],
+      "owner_chat_tool": "newsletter_writer"
+    },
+    {
+      "name": "read_full_newsletter",
+      "description": "Read the ENTIRE newsletter body as editable Markdown (# subject, ## section headings, body in light markdown). Returns the full text to chat on purpose — call this before editing so you work from the real current text, never from memory. Use for: покажи полный текст письма, дай отредактировать, read the whole newsletter.",
+      "action_type": "read",
+      "chain_callable": true,
+      "effects": [],
+      "id_projection": "",
+      "params_schema": {
+        "properties": {
+          "newsletter_id": {
+            "description": "Newsletter ID from list_newsletters",
+            "title": "Newsletter Id",
+            "type": "string"
+          }
+        },
+        "required": [
+          "newsletter_id"
+        ],
+        "title": "NewsletterIdParams",
+        "type": "object"
+      },
+      "return_schema": {
+        "description": "Full newsletter body as editable Markdown — the read side of Webbee's\nedit loop (read_full_newsletter -> edit -> edit_full_newsletter). Returned\nto chat on purpose, unlike NewsletterSummaryRecord.",
+        "properties": {
+          "id": {
+            "title": "Id",
+            "type": "string"
+          },
+          "subject": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Subject"
+          },
+          "status": {
+            "default": "idea",
+            "title": "Status",
+            "type": "string"
+          },
+          "word_count": {
+            "default": 0,
+            "title": "Word Count",
+            "type": "integer"
+          },
+          "markdown": {
+            "default": "",
+            "title": "Markdown",
+            "type": "string"
+          }
+        },
+        "required": [
+          "id"
+        ],
+        "title": "NewsletterTextRecord",
+        "type": "object"
+      },
+      "event": "",
+      "background": false,
+      "long_running": false,
+      "scopes": [],
+      "owner_chat_tool": "newsletter_writer"
+    },
+    {
+      "name": "edit_full_newsletter",
+      "description": "Replace the ENTIRE newsletter with your edited version as Markdown (# subject, ## headings, body). Stores EXACTLY what you submit — nothing is re-generated — so first read_full_newsletter, change only what's needed, and resend the COMPLETE text with every unchanged part preserved verbatim. For a small targeted change prefer patch_newsletter. Use for: перепиши письмо целиком, поправь текст письма, edit the newsletter.",
+      "action_type": "write",
+      "chain_callable": true,
+      "effects": [
+        "update:newsletter"
+      ],
+      "id_projection": "",
+      "params_schema": {
+        "description": "Webbee's own full-text edit — the complete edited newsletter as Markdown\n(leading `# ` = subject, `## ` = section headings, body in light markdown).\nDistinct from patch_newsletter (targeted one-section rewrite): this replaces\nthe whole document with exactly what you submit — nothing is re-generated,\nso preserve every unchanged part verbatim.",
+        "properties": {
+          "newsletter_id": {
+            "description": "Newsletter ID from list_newsletters",
+            "title": "Newsletter Id",
+            "type": "string"
+          },
+          "content_markdown": {
+            "description": "The COMPLETE edited newsletter as Markdown (# subject, ## headings, body)",
+            "maxLength": 400000,
+            "minLength": 1,
+            "title": "Content Markdown",
+            "type": "string"
+          }
+        },
+        "required": [
+          "newsletter_id",
+          "content_markdown"
+        ],
+        "title": "EditFullNewsletterParams",
+        "type": "object"
+      },
+      "return_schema": {
+        "description": "Metadata only — no sections/content field, by design (see module docstring).",
+        "properties": {
+          "id": {
+            "title": "Id",
+            "type": "string"
+          },
+          "project_id": {
+            "default": "",
+            "title": "Project Id",
+            "type": "string"
+          },
+          "subject": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Subject"
+          },
+          "preheader": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Preheader"
+          },
+          "status": {
+            "default": "idea",
+            "title": "Status",
+            "type": "string"
+          },
+          "word_count": {
+            "default": 0,
+            "title": "Word Count",
+            "type": "integer"
+          },
+          "model_used": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Model Used"
+          },
+          "quality_flags": {
+            "anyOf": [
+              {
+                "additionalProperties": true,
+                "type": "object"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Quality Flags"
+          },
+          "mailerlite_campaign_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Mailerlite Campaign Id"
+          },
+          "scheduled_at": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Scheduled At"
+          },
+          "sent_at": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Sent At"
+          }
+        },
+        "required": [
+          "id"
+        ],
+        "title": "NewsletterSummaryRecord",
         "type": "object"
       },
       "event": "newsletter-writer.newsletter.section_saved",

@@ -20,10 +20,12 @@ from api_client import call_backend
 from params import (
     CreateNewsletterParams, ListNewslettersParams, NewsletterIdParams,
     UpdateNewsletterStatusParams, UpdateNewsletterMetaParams, UpdateNewsletterSectionParams,
-    SaveFullNewsletterParams,
+    SaveFullNewsletterParams, EditFullNewsletterParams,
 )
-from response_models import NewsletterSummaryRecord, NewsletterListResponse, DeletedResponse
-from richtext import html_to_document
+from response_models import (
+    NewsletterSummaryRecord, NewsletterListResponse, DeletedResponse, NewsletterTextRecord,
+)
+from richtext import html_to_document, document_to_markdown, markdown_to_document
 
 
 def _err(data: dict) -> ActionResult:
@@ -206,6 +208,66 @@ async def fn_save_full_newsletter(ctx, params: SaveFullNewsletterParams) -> Acti
     return ActionResult.success(
         data=DeletedResponse(deleted=False), summary="Newsletter saved.", refresh_panels=["workspace"],
     )
+
+
+@chat.function(
+    "read_full_newsletter",
+    description=(
+        "Read the ENTIRE newsletter body as editable Markdown (# subject, ## section headings, "
+        "body in light markdown). Returns the full text to chat on purpose — call this before "
+        "editing so you work from the real current text, never from memory. Use for: покажи "
+        "полный текст письма, дай отредактировать, read the whole newsletter."
+    ),
+    action_type="read",
+    data_model=NewsletterTextRecord,
+)
+async def fn_read_full_newsletter(ctx, params: NewsletterIdParams) -> ActionResult:
+    """Return the whole newsletter as Markdown for Webbee to read/edit."""
+    data = await call_backend(ctx, "GET", f"/v1/newsletters/{params.newsletter_id}")
+    if "error" in data:
+        return _err(data)
+    md = document_to_markdown(data.get("subject") or "", data.get("sections") or [])
+    result = NewsletterTextRecord(
+        id=data.get("id", params.newsletter_id), subject=data.get("subject"),
+        status=data.get("status", "idea"), word_count=data.get("word_count", 0), markdown=md,
+    )
+    return ActionResult.success(data=result, summary=f"Full newsletter text ({result.word_count} words).")
+
+
+@chat.function(
+    "edit_full_newsletter",
+    description=(
+        "Replace the ENTIRE newsletter with your edited version as Markdown (# subject, ## "
+        "headings, body). Stores EXACTLY what you submit — nothing is re-generated — so first "
+        "read_full_newsletter, change only what's needed, and resend the COMPLETE text with every "
+        "unchanged part preserved verbatim. For a small targeted change prefer patch_newsletter. "
+        "Use for: перепиши письмо целиком, поправь текст письма, edit the newsletter."
+    ),
+    action_type="write",
+    event="newsletter-writer.newsletter.section_saved",
+    effects=["update:newsletter"],
+    data_model=NewsletterSummaryRecord,
+)
+async def fn_edit_full_newsletter(ctx, params: EditFullNewsletterParams) -> ActionResult:
+    """Webbee's full-text edit — split submitted Markdown into subject + sections, store verbatim."""
+    subject, sections = markdown_to_document(params.content_markdown)
+    if not sections:
+        return ActionResult.error(error="Nothing to save — the submitted text is empty.")
+    data = await call_backend(
+        ctx, "PUT", f"/v1/newsletters/{params.newsletter_id}/sections", json={"sections": sections},
+    )
+    if "error" in data:
+        return _err(data)
+    latest = data
+    if subject:
+        meta = await call_backend(
+            ctx, "PATCH", f"/v1/newsletters/{params.newsletter_id}/meta", json={"subject": subject},
+        )
+        if isinstance(meta, dict) and "error" in meta:
+            return _err(meta)
+        latest = meta
+    result = _to_summary(latest) if isinstance(latest, dict) and latest.get("id") else NewsletterSummaryRecord(id=params.newsletter_id)
+    return ActionResult.success(data=result, summary="Newsletter updated.", refresh_panels=["workspace"])
 
 
 @chat.function(

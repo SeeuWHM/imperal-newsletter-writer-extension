@@ -49,7 +49,7 @@ SERVER_URL = os.environ.get("NEWSLETTER_WRITER_BACKEND_URL", "") or "https://api
 
 ext = Extension(
     "imperal-newsletter-writer-extension",
-    version="1.3.0",
+    version="1.4.0",
     display_name="Newsletter Writer",
     description=(
         "Project-based email newsletter writing: keep per-project context (brand voice, goals, "
@@ -78,10 +78,17 @@ chat = ChatExtension(
         "обнови контекст проекта), manage reusable fill items like promo codes or priority links "
         "(добавь категорию для промокодов, добавь промокод), list projects/newsletters (покажи "
         "проекты, покажи рассылки), create a newsletter and generate its draft (напиши рассылку, "
-        "сгенерируй письмо), check generation status, patch a specific block by instruction "
-        "(перепиши абзац про акцию), change newsletter status (idea/writing/review/scheduled/sent). "
-        "Never returns full newsletter bodies to chat — full text is read/edited only in the "
-        "Newsletter Writer panel."
+        "сгенерируй письмо), check generation status, change newsletter status "
+        "(idea/writing/review/scheduled/sent). "
+        "PROACTIVE DATA: fill categories are free-form — right after a project is created (or "
+        "before writing), proactively offer to set up the reusable data THIS topic actually needs "
+        "and ask the user for it: for hosting that's promo codes; for a local business an address "
+        "and opening hours; and so on. Store each item's real conditions/eligibility in its note "
+        "(e.g. a promo code's exact plan/term/'extra vs base' scope) so the writer states offers "
+        "accurately and never broadens a promise or invents an offer. "
+        "EDITING: read the full text with read_full_newsletter and rewrite it with "
+        "edit_full_newsletter (resend the complete text, changing only what's asked); for a small "
+        "targeted change use patch_newsletter. The panel is another place the full text is edited."
     ),
     max_rounds=10,
 )

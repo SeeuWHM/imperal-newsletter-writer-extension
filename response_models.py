@@ -129,3 +129,15 @@ class PatchResult(BaseModel):
     order_index: int = 0
     heading: Optional[str] = None
     preview: str = ""
+
+
+class NewsletterTextRecord(BaseModel):
+    """Full newsletter body as editable Markdown — the read side of Webbee's
+    edit loop (read_full_newsletter -> edit -> edit_full_newsletter). Returned
+    to chat on purpose, unlike NewsletterSummaryRecord."""
+
+    id: str
+    subject: Optional[str] = None
+    status: str = "idea"
+    word_count: int = 0
+    markdown: str = ""

@@ -172,6 +172,17 @@ class UpdateNewsletterSectionParams(BaseModel):
     content: Optional[str] = Field(default=None, max_length=200000)
 
 
+class EditFullNewsletterParams(BaseModel):
+    """Webbee's own full-text edit — the complete edited newsletter as Markdown
+    (leading `# ` = subject, `## ` = section headings, body in light markdown).
+    Distinct from patch_newsletter (targeted one-section rewrite): this replaces
+    the whole document with exactly what you submit — nothing is re-generated,
+    so preserve every unchanged part verbatim."""
+    newsletter_id: str = Field(..., description="Newsletter ID from list_newsletters")
+    content_markdown: str = Field(..., min_length=1, max_length=400000,
+                                  description="The COMPLETE edited newsletter as Markdown (# subject, ## headings, body)")
+
+
 class SaveFullNewsletterParams(BaseModel):
     """PANEL-ONLY: the whole merged document from the single-window editor —
     not something Webbee should ever construct from chat. Mirrors Article

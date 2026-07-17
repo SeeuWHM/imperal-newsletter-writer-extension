@@ -20,7 +20,7 @@ import api_client
 from params import (
     CreateNewsletterParams, ListNewslettersParams, NewsletterIdParams,
     UpdateNewsletterStatusParams, UpdateNewsletterMetaParams, UpdateNewsletterSectionParams,
-    SaveFullNewsletterParams,
+    SaveFullNewsletterParams, EditFullNewsletterParams,
     GenerateNewsletterParams, GenerationJobStatusParams, PatchNewsletterParams,
 )
 
@@ -167,6 +167,46 @@ async def test_save_full_newsletter_without_h1_keeps_subject(monkeypatch):
     assert result.status == "success"
     assert ("PUT", "/v1/newsletters/n1/sections") in calls
     assert ("PATCH", "/v1/newsletters/n1/meta") not in calls
+
+
+@pytest.mark.asyncio
+async def test_read_full_newsletter_returns_markdown(monkeypatch):
+    async def fake_call(ctx, method, path, **kw):
+        assert method == "GET" and path == "/v1/newsletters/n1"
+        return {"id": "n1", "subject": "Spring Sale", "status": "review", "word_count": 42,
+                "sections": [{"heading": "Intro", "content": "Hello **there**."}]}
+
+    monkeypatch.setattr(handlers_newsletters, "call_backend", fake_call)
+    result = await handlers_newsletters.fn_read_full_newsletter(_ctx(), NewsletterIdParams(newsletter_id="n1"))
+    assert result.status == "success"
+    assert result.data.markdown.startswith("# Spring Sale")
+    assert "## Intro" in result.data.markdown
+    assert "Hello **there**." in result.data.markdown
+
+
+@pytest.mark.asyncio
+async def test_edit_full_newsletter_persists_subject_and_body(monkeypatch):
+    captured = {}
+
+    async def fake_call(ctx, method, path, **kw):
+        if method == "PUT" and path == "/v1/newsletters/n1/sections":
+            captured["sections"] = kw["json"]["sections"]
+            return {"id": "n1", "project_id": "p1", "status": "review", "word_count": 5}
+        if method == "PATCH" and path == "/v1/newsletters/n1/meta":
+            captured["subject"] = kw["json"]["subject"]
+            return {"id": "n1", "project_id": "p1", "subject": kw["json"]["subject"], "status": "review", "word_count": 5}
+        raise AssertionError(f"unexpected call {method} {path}")
+
+    monkeypatch.setattr(handlers_newsletters, "call_backend", fake_call)
+    md = "# New Subject\n\n## Intro\n\nEdited **body** text.\n\n## Offer\n\nGrab it."
+    result = await handlers_newsletters.fn_edit_full_newsletter(
+        _ctx(), EditFullNewsletterParams(newsletter_id="n1", content_markdown=md)
+    )
+    assert result.status == "success"
+    assert captured["subject"] == "New Subject"
+    assert [s["heading"] for s in captured["sections"]] == ["Intro", "Offer"]
+    assert "Edited **body** text." in captured["sections"][0]["content"]
+    assert not hasattr(result.data, "sections")
 
 
 @pytest.mark.asyncio

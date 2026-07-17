@@ -12,7 +12,7 @@ sys.path.insert(0, str(ROOT))
 
 from richtext import (
     sections_to_html, html_to_sections, to_html, from_html, to_export_text,
-    document_to_html, html_to_document,
+    document_to_html, html_to_document, document_to_markdown, markdown_to_document,
 )
 
 
@@ -124,3 +124,36 @@ def test_html_to_document_no_h1_yields_empty_subject():
     subject, sections = html_to_document("<h2>Body</h2><p>Text.</p>")
     assert subject == ""
     assert sections[0]["heading"] == "Body"
+
+
+def test_markdown_document_round_trip():
+    # Realistic shape: every section has a heading (generation always emits one)
+    # -> exact round trip.
+    subject = "Spring Sale"
+    sections = [
+        {"heading": "Intro", "content": "Hello **there**.\n\nSecond paragraph."},
+        {"heading": "Offer", "content": "- point one\n- point two"},
+    ]
+    md = document_to_markdown(subject, sections)
+    assert md.startswith("# Spring Sale")
+    assert "## Intro" in md and "## Offer" in md
+    subj2, sec2 = markdown_to_document(md)
+    assert subj2 == subject
+    assert sec2 == sections
+
+
+def test_markdown_round_trip_with_leading_headingless_section():
+    subject = "Hi"
+    sections = [
+        {"heading": None, "content": "Intro before any heading."},
+        {"heading": "Body", "content": "Section body."},
+    ]
+    subj2, sec2 = markdown_to_document(document_to_markdown(subject, sections))
+    assert subj2 == subject
+    assert sec2 == sections
+
+
+def test_markdown_to_document_no_h1_keeps_subject_empty():
+    subj, sections = markdown_to_document("## Body\n\nJust text.")
+    assert subj == ""
+    assert sections == [{"heading": "Body", "content": "Just text."}]
