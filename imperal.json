@@ -14,7 +14,8 @@
     "AI Newsletter Generation",
     "Mechanical Quality Gates",
     "Panel Newsletter Editor",
-    "Natural-Language Newsletter Patching"
+    "Natural-Language Newsletter Patching",
+    "notify:push"
   ],
   "tools": [
     {

@@ -66,6 +66,7 @@ ext = Extension(
         "Mechanical Quality Gates",
         "Panel Newsletter Editor",
         "Natural-Language Newsletter Patching",
+        "notify:push",
     ],
 )
 
