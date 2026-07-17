@@ -2,7 +2,7 @@
   "manifest_schema_version": 3,
   "sdk_version": "5.9.6",
   "app_id": "imperal-newsletter-writer-extension",
-  "version": "1.2.0",
+  "version": "1.3.0",
   "name": "Newsletter Writer",
   "description": "Project-based email newsletter writing: keep per-project context (brand voice, goals, reference links, reusable 'fill' items like promo codes) and have newsletters written cheaply, with mechanical quality gates and self-review, grounded in that context. Read/edit full newsletters in the panel — chat never touches full bodies.",
   "icon": "icon.svg",
@@ -22,6 +22,21 @@
       "description": "Newsletter Writer projects + newsletter counts by status — degrades to zeros if backend unreachable",
       "scopes": [],
       "parameters": {}
+    },
+    {
+      "name": "skeleton_alert_newsletter_writer_overview",
+      "description": "Fires when a newsletter finishes generating and lands in 'review' — proactive 'your newsletter is ready' notice.",
+      "scopes": [],
+      "parameters": {
+        "old": {
+          "type": "string",
+          "required": false
+        },
+        "new": {
+          "type": "string",
+          "required": false
+        }
+      }
     },
     {
       "name": "create_project",

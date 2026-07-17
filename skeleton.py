@@ -10,7 +10,7 @@ from app import ext
 from api_client import call_backend
 
 
-@ext.skeleton("newsletter_writer_overview", ttl=60,
+@ext.skeleton("newsletter_writer_overview", ttl=60, alert=True,
               description="Newsletter Writer projects + newsletter counts by status — degrades to zeros if backend unreachable")
 async def skeleton_refresh_overview(ctx) -> dict:
     # Skeleton contract: return {"response": <flat-scalars dict>} — the outer
@@ -36,6 +36,16 @@ async def skeleton_refresh_overview(ctx) -> dict:
         s = n.get("status", "idea")
         by_status[s] = by_status.get(s, 0) + 1
 
+    # Subject of the most-recently-updated newsletter sitting in "review" —
+    # this is what a just-finished generation lands as. The paired alert tool
+    # fires when the review count goes up and names this one, so Webbee can
+    # proactively tell the user "<subject> is ready" the moment it's written.
+    review_items = [n for n in newsletters if n.get("status") == "review"]
+    latest_ready = ""
+    if review_items:
+        newest = max(review_items, key=lambda n: n.get("updated_at") or "")
+        latest_ready = (newest.get("subject") or "(untitled)")[:60]
+
     if not projects and "error" in projects_data:
         instruction = (
             "Newsletter Writer backend is unreachable right now — tell the user generation/project "
@@ -55,5 +65,31 @@ async def skeleton_refresh_overview(ctx) -> dict:
         "project_count": project_count,
         "newsletter_count": newsletter_count,
         "by_status": by_status,
+        "latest_ready": latest_ready,
         "instruction": instruction,
     }}
+
+
+@ext.tool(
+    "skeleton_alert_newsletter_writer_overview",
+    description="Fires when a newsletter finishes generating and lands in 'review' — proactive 'your newsletter is ready' notice.",
+)
+async def skeleton_alert_newsletter_writer_overview(ctx, old: dict | None = None, new: dict | None = None) -> dict:
+    """Compare the previous vs current skeleton snapshot; if the number of
+    newsletters in 'review' went up, a generation just finished — return a
+    short notice naming the newest one so Webbee tells the user proactively.
+    Returns {"response": ""} (no alert) on first snapshot or no change."""
+    try:
+        if not old or not new:
+            return {"response": ""}
+        old_review = int((old.get("by_status") or {}).get("review", 0))
+        new_review = int((new.get("by_status") or {}).get("review", 0))
+        if new_review <= old_review:
+            return {"response": ""}
+        latest = (new.get("latest_ready") or "").strip()
+        added = new_review - old_review
+        if latest and added == 1:
+            return {"response": f'Your newsletter "{latest}" is written and ready for review in the Newsletter Writer panel.'}
+        return {"response": f"{added} newsletters just finished and are ready for review in the Newsletter Writer panel."}
+    except Exception:
+        return {"response": ""}
