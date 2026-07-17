@@ -26,8 +26,7 @@ from response_models import GenerationJobResponse, GenerationStatusResponse, Pat
         "search or other extensions, e.g. an Article Writer article or Matomo/GSC data) the "
         "draft's claims must be grounded in. Runs in the background — call "
         "check_generation_status with the returned job_id to see when it's done "
-        "(status lands on 'review'). Use for: напиши рассылку, сгенерируй письмо, write the "
-        "newsletter, draft this email."
+        "(status lands on 'review'). Use for: write the newsletter, draft this email."
     ),
     action_type="write",
     event="newsletter-writer.newsletter.generation_started",
@@ -57,7 +56,7 @@ async def fn_generate_newsletter(ctx, params: GenerateNewsletterParams) -> Actio
     "check_generation_status",
     description=(
         "Check progress of a generate_newsletter job — status, model used, cost. Use for: "
-        "готова ли рассылка, статус генерации, is the newsletter ready, check generation progress."
+        "is the newsletter ready, check generation progress."
     ),
     action_type="read",
     data_model=GenerationStatusResponse,
@@ -82,8 +81,7 @@ async def fn_check_generation_status(ctx, params: GenerationJobStatusParams) -> 
         "Rewrite ONE block of a newsletter by natural-language instruction (e.g. 'rewrite the "
         "block about the promo to be more urgent', 'shorten the intro'). Locates the block "
         "automatically (heading/keyword match) and returns a short preview — never the full "
-        "body. Use for: перепиши блок про промокод, shorten this newsletter's intro, make the "
-        "CTA punchier."
+        "body. Use for: shorten this newsletter's intro, make the CTA punchier."
     ),
     action_type="write",
     event="newsletter-writer.newsletter.patched",

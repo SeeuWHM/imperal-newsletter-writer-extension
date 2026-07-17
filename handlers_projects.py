@@ -60,8 +60,8 @@ def _links_response(project_id: str, links: list) -> ReferenceLinksResponse:
     "create_project",
     description=(
         "Create a new newsletter project — a container for one brand's context: goals, brand "
-        "voice, keywords, useful links, socials, MailerLite targeting label. Use for: создай "
-        "проект рассылки, новый проект для newsletter, add a new newsletter project."
+        "voice, keywords, useful links, socials, MailerLite targeting label. Use for: "
+        "add a new newsletter project."
     ),
     action_type="write",
     event="newsletter-writer.project.created",
@@ -83,8 +83,8 @@ async def fn_create_project(ctx, params: CreateProjectParams) -> ActionResult:
 @chat.function(
     "list_projects",
     description=(
-        "List all newsletter projects — id, name, keywords, goals. Use for: покажи мои проекты "
-        "рассылок, list my newsletter projects, what newsletter projects do I have."
+        "List all newsletter projects — id, name, keywords, goals. Use for: "
+        "list my newsletter projects, what newsletter projects do I have."
     ),
     action_type="read",
     chain_callable=True,
@@ -118,7 +118,7 @@ async def fn_list_projects(ctx, params: _EmptyParams) -> ActionResult:
     description=(
         "Update a newsletter project's context — any of: name, description, brand voice, goals, "
         "keywords, useful links, social links, MailerLite targeting label/group ids. Only send "
-        "fields that changed. Use for: обнови проект рассылки, add keywords to newsletter "
+        "fields that changed. Use for: add keywords to newsletter "
         "project, update brand voice, set MailerLite targeting."
     ),
     action_type="write",
@@ -146,7 +146,7 @@ async def fn_update_project_context(ctx, params: UpdateProjectContextParams) -> 
     "delete_project",
     description=(
         "Permanently delete a newsletter project and ALL its newsletters, fill categories and "
-        "fill items. Use for: удали проект рассылки, delete this newsletter project, remove "
+        "fill items. Use for: delete this newsletter project, remove "
         "newsletter site."
     ),
     action_type="destructive",
@@ -172,8 +172,8 @@ async def fn_delete_project(ctx, params: ProjectIdParams) -> ActionResult:
     description=(
         "Add ONE internal page of THIS project's own site as a reference link the newsletter "
         "writer may link to, with a short description of what that page is about. The writer "
-        "uses the description to weave a natural, in-sentence anchor. Use for: добавь ссылку для "
-        "перелинковки в рассылке, add an internal link for the newsletter writer."
+        "uses the description to weave a natural, in-sentence anchor. Use for: "
+        "add an internal link for the newsletter writer."
     ),
     action_type="write",
     event="newsletter-writer.project.updated",
@@ -203,8 +203,8 @@ async def fn_add_reference_link(ctx, params: AddReferenceLinkParams) -> ActionRe
 @chat.function(
     "list_reference_links",
     description=(
-        "List the internal reference links saved on a newsletter project. Use for: покажи ссылки "
-        "для перелинковки, list reference links, what internal links can the newsletter writer use."
+        "List the internal reference links saved on a newsletter project. Use for: "
+        "list reference links, what internal links can the newsletter writer use."
     ),
     action_type="read",
     chain_callable=True,
@@ -230,8 +230,8 @@ async def fn_list_reference_links(ctx, params: ProjectIdParams) -> ActionResult:
 @chat.function(
     "remove_reference_link",
     description=(
-        "Remove ONE internal reference link from a newsletter project by its URL. Use for: убери "
-        "ссылку для перелинковки, remove a reference link."
+        "Remove ONE internal reference link from a newsletter project by its URL. Use for: "
+        "remove a reference link."
     ),
     action_type="destructive",
     event="newsletter-writer.project.updated",

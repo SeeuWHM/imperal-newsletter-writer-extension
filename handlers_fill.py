@@ -29,7 +29,7 @@ from response_models import (
     description=(
         "Add a named 'stock' category (e.g. promo codes, priority links, topics to cover) to a "
         "newsletter project. Capped per project — ask the user proactively which categories they "
-        "want. Use for: добавь категорию для рассылки, create a fill category, add a promo-code slot."
+        "want. Use for: create a fill category, add a promo-code slot."
     ),
     action_type="write",
     event="newsletter-writer.project.updated",
@@ -55,7 +55,7 @@ async def fn_create_fill_category(ctx, params: CreateFillCategoryParams) -> Acti
     "list_fill_categories",
     description=(
         "List the fill categories (promo codes, links, topics, etc.) on a newsletter project. "
-        "Use for: покажи категории рассылки, list fill categories."
+        "Use for: list fill categories."
     ),
     action_type="read",
     chain_callable=True,
@@ -83,8 +83,7 @@ async def fn_list_fill_categories(ctx, params: ProjectIdParams) -> ActionResult:
 @chat.function(
     "delete_fill_category",
     description=(
-        "Permanently delete a fill category and all its items. Use for: удали категорию рассылки, "
-        "delete this fill category."
+        "Permanently delete a fill category and all its items. Use for: delete this fill category."
     ),
     action_type="destructive",
     event="newsletter-writer.project.updated",
@@ -108,7 +107,7 @@ async def fn_delete_fill_category(ctx, params: FillCategoryIdParams) -> ActionRe
     "create_fill_item",
     description=(
         "Add one value (a promo code, a specific link, a topic) to a fill category. The "
-        "generation pipeline rotates through items least-used-first. Use for: добавь промокод, "
+        "generation pipeline rotates through items least-used-first. Use for: "
         "add an item to the category, add a value to fill category."
     ),
     action_type="write",
@@ -134,8 +133,7 @@ async def fn_create_fill_item(ctx, params: CreateFillItemParams) -> ActionResult
 @chat.function(
     "list_fill_items",
     description=(
-        "List the items in a fill category, least-used-first. Use for: покажи элементы категории, "
-        "list fill items."
+        "List the items in a fill category, least-used-first. Use for: list fill items."
     ),
     action_type="read",
     chain_callable=True,
@@ -173,7 +171,7 @@ async def fn_list_fill_items(ctx, params: FillCategoryIdParams) -> ActionResult:
     "update_fill_item",
     description=(
         "Change a fill item's value/note, or retire it (is_active=false) without deleting its "
-        "usage history — e.g. an expired promo code. Use for: обнови элемент категории, retire "
+        "usage history — e.g. an expired promo code. Use for: retire "
         "this promo code, deactivate fill item."
     ),
     action_type="write",
@@ -204,7 +202,7 @@ async def fn_update_fill_item(ctx, params: UpdateFillItemParams) -> ActionResult
 @chat.function(
     "delete_fill_item",
     description=(
-        "Permanently delete one fill item. Use for: удали элемент категории, delete this fill item."
+        "Permanently delete one fill item. Use for: delete this fill item."
     ),
     action_type="destructive",
     event="newsletter-writer.project.updated",

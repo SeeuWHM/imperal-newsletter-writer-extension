@@ -48,7 +48,7 @@ def _to_summary(n: dict) -> NewsletterSummaryRecord:
     description=(
         "Create a new newsletter shell under a project — just a placeholder, no content yet. "
         "Does not call any AI. Follow up with generate_newsletter to actually write it. Use "
-        "for: создай рассылку, новая рассылка, add a newsletter idea, start a new email draft."
+        "for: add a newsletter idea, start a new email draft."
     ),
     action_type="write",
     event="newsletter-writer.newsletter.created",
@@ -70,7 +70,7 @@ async def fn_create_newsletter(ctx, params: CreateNewsletterParams) -> ActionRes
     "list_newsletters",
     description=(
         "List newsletters (metadata only — id, subject, status, word count, quality flags — "
-        "never the full body). Optionally filter by project or status. Use for: покажи рассылки, "
+        "never the full body). Optionally filter by project or status. Use for: "
         "list newsletters, what's in review, show idea/writing/review/scheduled/sent newsletters."
     ),
     action_type="read",
@@ -104,7 +104,7 @@ async def fn_list_newsletters(ctx, params: ListNewslettersParams) -> ActionResul
     "update_newsletter_status",
     description=(
         "Move a newsletter to a new status: idea, writing, review, scheduled, sent. Use for: "
-        "отправь в ревью, пометь как готово, move this newsletter to review/scheduled."
+        "move this newsletter to review/scheduled."
     ),
     action_type="write",
     event="newsletter-writer.newsletter.updated",
@@ -125,7 +125,7 @@ async def fn_update_newsletter_status(ctx, params: UpdateNewsletterStatusParams)
     "update_newsletter_meta",
     description=(
         "Fix a newsletter's subject and/or preheader without touching the body. Use for: "
-        "поменяй тему письма, обнови прехедер, change the subject line."
+        "change the subject line."
     ),
     action_type="write",
     event="newsletter-writer.newsletter.updated",
@@ -221,7 +221,7 @@ async def fn_save_full_newsletter(ctx, params: SaveFullNewsletterParams) -> Acti
         "editing so you work from the real current text, never from memory. (To hand a newsletter "
         "to another app like MailerLite/Mail/Notes, use export_newsletter_text instead — sending "
         "raw Markdown produces literal '**'/'##' characters in the recipient's inbox.) Use for: "
-        "покажи полный текст письма, дай отредактировать, read the whole newsletter."
+        "read the whole newsletter."
     ),
     action_type="read",
     data_model=NewsletterTextRecord,
@@ -273,7 +273,7 @@ async def fn_export_newsletter_text(ctx, params: NewsletterIdParams) -> ActionRe
         "headings, body). Stores EXACTLY what you submit — nothing is re-generated — so first "
         "read_full_newsletter, change only what's needed, and resend the COMPLETE text with every "
         "unchanged part preserved verbatim. For a small targeted change prefer patch_newsletter. "
-        "Use for: перепиши письмо целиком, поправь текст письма, edit the newsletter."
+        "Use for: edit the newsletter."
     ),
     action_type="write",
     event="newsletter-writer.newsletter.section_saved",
@@ -306,7 +306,7 @@ async def fn_edit_full_newsletter(ctx, params: EditFullNewsletterParams) -> Acti
 
 @chat.function(
     "delete_newsletter",
-    description="Permanently delete a newsletter. Use for: удали рассылку, delete this newsletter.",
+    description="Permanently delete a newsletter. Use for: delete this newsletter.",
     action_type="destructive",
     event="newsletter-writer.newsletter.deleted",
     effects=["delete:newsletter"],

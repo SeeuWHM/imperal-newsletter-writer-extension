@@ -74,11 +74,9 @@ chat = ChatExtension(
     tool_name="newsletter_writer",
     description=(
         "Newsletter Writer — project-based email newsletter writing. Use for: create/update a "
-        "project's context (brand voice, goals, reference links — создай проект для рассылок, "
-        "обнови контекст проекта), manage reusable fill items like promo codes or priority links "
-        "(добавь категорию для промокодов, добавь промокод), list projects/newsletters (покажи "
-        "проекты, покажи рассылки), create a newsletter and generate its draft (напиши рассылку, "
-        "сгенерируй письмо), check generation status, change newsletter status "
+        "project's context (brand voice, goals, reference links), manage reusable fill items "
+        "like promo codes or priority links, list projects/newsletters, create a newsletter and "
+        "generate its draft, check generation status, change newsletter status "
         "(idea/writing/review/scheduled/sent). "
         "PROACTIVE DATA: fill categories are free-form — right after a project is created (or "
         "before writing), proactively offer to set up the reusable data THIS topic actually needs "

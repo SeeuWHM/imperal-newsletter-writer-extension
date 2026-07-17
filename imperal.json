@@ -40,7 +40,7 @@
     },
     {
       "name": "create_project",
-      "description": "Create a new newsletter project — a container for one brand's context: goals, brand voice, keywords, useful links, socials, MailerLite targeting label. Use for: создай проект рассылки, новый проект для newsletter, add a new newsletter project.",
+      "description": "Create a new newsletter project — a container for one brand's context: goals, brand voice, keywords, useful links, socials, MailerLite targeting label. Use for: add a new newsletter project.",
       "action_type": "write",
       "chain_callable": true,
       "effects": [
@@ -303,7 +303,7 @@
     },
     {
       "name": "list_projects",
-      "description": "List all newsletter projects — id, name, keywords, goals. Use for: покажи мои проекты рассылок, list my newsletter projects, what newsletter projects do I have.",
+      "description": "List all newsletter projects — id, name, keywords, goals. Use for: list my newsletter projects, what newsletter projects do I have.",
       "action_type": "read",
       "chain_callable": true,
       "effects": [],
@@ -472,7 +472,7 @@
     },
     {
       "name": "update_project_context",
-      "description": "Update a newsletter project's context — any of: name, description, brand voice, goals, keywords, useful links, social links, MailerLite targeting label/group ids. Only send fields that changed. Use for: обнови проект рассылки, add keywords to newsletter project, update brand voice, set MailerLite targeting.",
+      "description": "Update a newsletter project's context — any of: name, description, brand voice, goals, keywords, useful links, social links, MailerLite targeting label/group ids. Only send fields that changed. Use for: add keywords to newsletter project, update brand voice, set MailerLite targeting.",
       "action_type": "write",
       "chain_callable": true,
       "effects": [
@@ -772,7 +772,7 @@
     },
     {
       "name": "delete_project",
-      "description": "Permanently delete a newsletter project and ALL its newsletters, fill categories and fill items. Use for: удали проект рассылки, delete this newsletter project, remove newsletter site.",
+      "description": "Permanently delete a newsletter project and ALL its newsletters, fill categories and fill items. Use for: delete this newsletter project, remove newsletter site.",
       "action_type": "destructive",
       "chain_callable": true,
       "effects": [
@@ -817,7 +817,7 @@
     },
     {
       "name": "add_reference_link",
-      "description": "Add ONE internal page of THIS project's own site as a reference link the newsletter writer may link to, with a short description of what that page is about. The writer uses the description to weave a natural, in-sentence anchor. Use for: добавь ссылку для перелинковки в рассылке, add an internal link for the newsletter writer.",
+      "description": "Add ONE internal page of THIS project's own site as a reference link the newsletter writer may link to, with a short description of what that page is about. The writer uses the description to weave a natural, in-sentence anchor. Use for: add an internal link for the newsletter writer.",
       "action_type": "write",
       "chain_callable": true,
       "effects": [
@@ -904,7 +904,7 @@
     },
     {
       "name": "list_reference_links",
-      "description": "List the internal reference links saved on a newsletter project. Use for: покажи ссылки для перелинковки, list reference links, what internal links can the newsletter writer use.",
+      "description": "List the internal reference links saved on a newsletter project. Use for: list reference links, what internal links can the newsletter writer use.",
       "action_type": "read",
       "chain_callable": true,
       "effects": [],
@@ -973,7 +973,7 @@
     },
     {
       "name": "remove_reference_link",
-      "description": "Remove ONE internal reference link from a newsletter project by its URL. Use for: убери ссылку для перелинковки, remove a reference link.",
+      "description": "Remove ONE internal reference link from a newsletter project by its URL. Use for: remove a reference link.",
       "action_type": "destructive",
       "chain_callable": true,
       "effects": [
@@ -1052,7 +1052,7 @@
     },
     {
       "name": "create_fill_category",
-      "description": "Add a named 'stock' category (e.g. promo codes, priority links, topics to cover) to a newsletter project. Capped per project — ask the user proactively which categories they want. Use for: добавь категорию для рассылки, create a fill category, add a promo-code slot.",
+      "description": "Add a named 'stock' category (e.g. promo codes, priority links, topics to cover) to a newsletter project. Capped per project — ask the user proactively which categories they want. Use for: create a fill category, add a promo-code slot.",
       "action_type": "write",
       "chain_callable": true,
       "effects": [
@@ -1159,7 +1159,7 @@
     },
     {
       "name": "list_fill_categories",
-      "description": "List the fill categories (promo codes, links, topics, etc.) on a newsletter project. Use for: покажи категории рассылки, list fill categories.",
+      "description": "List the fill categories (promo codes, links, topics, etc.) on a newsletter project. Use for: list fill categories.",
       "action_type": "read",
       "chain_callable": true,
       "effects": [],
@@ -1256,7 +1256,7 @@
     },
     {
       "name": "delete_fill_category",
-      "description": "Permanently delete a fill category and all its items. Use for: удали категорию рассылки, delete this fill category.",
+      "description": "Permanently delete a fill category and all its items. Use for: delete this fill category.",
       "action_type": "destructive",
       "chain_callable": true,
       "effects": [
@@ -1307,7 +1307,7 @@
     },
     {
       "name": "create_fill_item",
-      "description": "Add one value (a promo code, a specific link, a topic) to a fill category. The generation pipeline rotates through items least-used-first. Use for: добавь промокод, add an item to the category, add a value to fill category.",
+      "description": "Add one value (a promo code, a specific link, a topic) to a fill category. The generation pipeline rotates through items least-used-first. Use for: add an item to the category, add a value to fill category.",
       "action_type": "write",
       "chain_callable": true,
       "effects": [
@@ -1420,7 +1420,7 @@
     },
     {
       "name": "list_fill_items",
-      "description": "List the items in a fill category, least-used-first. Use for: покажи элементы категории, list fill items.",
+      "description": "List the items in a fill category, least-used-first. Use for: list fill items.",
       "action_type": "read",
       "chain_callable": true,
       "effects": [],
@@ -1530,7 +1530,7 @@
     },
     {
       "name": "update_fill_item",
-      "description": "Change a fill item's value/note, or retire it (is_active=false) without deleting its usage history — e.g. an expired promo code. Use for: обнови элемент категории, retire this promo code, deactivate fill item.",
+      "description": "Change a fill item's value/note, or retire it (is_active=false) without deleting its usage history — e.g. an expired promo code. Use for: retire this promo code, deactivate fill item.",
       "action_type": "write",
       "chain_callable": true,
       "effects": [
@@ -1668,7 +1668,7 @@
     },
     {
       "name": "delete_fill_item",
-      "description": "Permanently delete one fill item. Use for: удали элемент категории, delete this fill item.",
+      "description": "Permanently delete one fill item. Use for: delete this fill item.",
       "action_type": "destructive",
       "chain_callable": true,
       "effects": [
@@ -1725,7 +1725,7 @@
     },
     {
       "name": "create_newsletter",
-      "description": "Create a new newsletter shell under a project — just a placeholder, no content yet. Does not call any AI. Follow up with generate_newsletter to actually write it. Use for: создай рассылку, новая рассылка, add a newsletter idea, start a new email draft.",
+      "description": "Create a new newsletter shell under a project — just a placeholder, no content yet. Does not call any AI. Follow up with generate_newsletter to actually write it. Use for: add a newsletter idea, start a new email draft.",
       "action_type": "write",
       "chain_callable": true,
       "effects": [
@@ -1896,7 +1896,7 @@
     },
     {
       "name": "list_newsletters",
-      "description": "List newsletters (metadata only — id, subject, status, word count, quality flags — never the full body). Optionally filter by project or status. Use for: покажи рассылки, list newsletters, what's in review, show idea/writing/review/scheduled/sent newsletters.",
+      "description": "List newsletters (metadata only — id, subject, status, word count, quality flags — never the full body). Optionally filter by project or status. Use for: list newsletters, what's in review, show idea/writing/review/scheduled/sent newsletters.",
       "action_type": "read",
       "chain_callable": true,
       "effects": [],
@@ -2075,7 +2075,7 @@
     },
     {
       "name": "update_newsletter_status",
-      "description": "Move a newsletter to a new status: idea, writing, review, scheduled, sent. Use for: отправь в ревью, пометь как готово, move this newsletter to review/scheduled.",
+      "description": "Move a newsletter to a new status: idea, writing, review, scheduled, sent. Use for: move this newsletter to review/scheduled.",
       "action_type": "write",
       "chain_callable": true,
       "effects": [
@@ -2224,7 +2224,7 @@
     },
     {
       "name": "update_newsletter_meta",
-      "description": "Fix a newsletter's subject and/or preheader without touching the body. Use for: поменяй тему письма, обнови прехедер, change the subject line.",
+      "description": "Fix a newsletter's subject and/or preheader without touching the body. Use for: change the subject line.",
       "action_type": "write",
       "chain_callable": true,
       "effects": [
@@ -2521,7 +2521,7 @@
     },
     {
       "name": "read_full_newsletter",
-      "description": "Read the ENTIRE newsletter body as editable Markdown (# subject, ## section headings, body in light markdown). Returns the full text to chat on purpose — call this before editing so you work from the real current text, never from memory. (To hand a newsletter to another app like MailerLite/Mail/Notes, use export_newsletter_text instead — sending raw Markdown produces literal '**'/'##' characters in the recipient's inbox.) Use for: покажи полный текст письма, дай отредактировать, read the whole newsletter.",
+      "description": "Read the ENTIRE newsletter body as editable Markdown (# subject, ## section headings, body in light markdown). Returns the full text to chat on purpose — call this before editing so you work from the real current text, never from memory. (To hand a newsletter to another app like MailerLite/Mail/Notes, use export_newsletter_text instead — sending raw Markdown produces literal '**'/'##' characters in the recipient's inbox.) Use for: read the whole newsletter.",
       "action_type": "read",
       "chain_callable": true,
       "effects": [],
@@ -2664,7 +2664,7 @@
     },
     {
       "name": "edit_full_newsletter",
-      "description": "Replace the ENTIRE newsletter with your edited version as Markdown (# subject, ## headings, body). Stores EXACTLY what you submit — nothing is re-generated — so first read_full_newsletter, change only what's needed, and resend the COMPLETE text with every unchanged part preserved verbatim. For a small targeted change prefer patch_newsletter. Use for: перепиши письмо целиком, поправь текст письма, edit the newsletter.",
+      "description": "Replace the ENTIRE newsletter with your edited version as Markdown (# subject, ## headings, body). Stores EXACTLY what you submit — nothing is re-generated — so first read_full_newsletter, change only what's needed, and resend the COMPLETE text with every unchanged part preserved verbatim. For a small targeted change prefer patch_newsletter. Use for: edit the newsletter.",
       "action_type": "write",
       "chain_callable": true,
       "effects": [
@@ -2816,7 +2816,7 @@
     },
     {
       "name": "delete_newsletter",
-      "description": "Permanently delete a newsletter. Use for: удали рассылку, delete this newsletter.",
+      "description": "Permanently delete a newsletter. Use for: delete this newsletter.",
       "action_type": "destructive",
       "chain_callable": true,
       "effects": [
@@ -2861,7 +2861,7 @@
     },
     {
       "name": "generate_newsletter",
-      "description": "Start writing a newsletter's first draft using the project's context (brand voice, goals, fill categories) plus a topic/goal brief and any real source facts (from web search or other extensions, e.g. an Article Writer article or Matomo/GSC data) the draft's claims must be grounded in. Runs in the background — call check_generation_status with the returned job_id to see when it's done (status lands on 'review'). Use for: напиши рассылку, сгенерируй письмо, write the newsletter, draft this email.",
+      "description": "Start writing a newsletter's first draft using the project's context (brand voice, goals, fill categories) plus a topic/goal brief and any real source facts (from web search or other extensions, e.g. an Article Writer article or Matomo/GSC data) the draft's claims must be grounded in. Runs in the background — call check_generation_status with the returned job_id to see when it's done (status lands on 'review'). Use for: write the newsletter, draft this email.",
       "action_type": "write",
       "chain_callable": true,
       "effects": [
@@ -3007,7 +3007,7 @@
     },
     {
       "name": "check_generation_status",
-      "description": "Check progress of a generate_newsletter job — status, model used, cost. Use for: готова ли рассылка, статус генерации, is the newsletter ready, check generation progress.",
+      "description": "Check progress of a generate_newsletter job — status, model used, cost. Use for: is the newsletter ready, check generation progress.",
       "action_type": "read",
       "chain_callable": true,
       "effects": [],
@@ -3116,7 +3116,7 @@
     },
     {
       "name": "patch_newsletter",
-      "description": "Rewrite ONE block of a newsletter by natural-language instruction (e.g. 'rewrite the block about the promo to be more urgent', 'shorten the intro'). Locates the block automatically (heading/keyword match) and returns a short preview — never the full body. Use for: перепиши блок про промокод, shorten this newsletter's intro, make the CTA punchier.",
+      "description": "Rewrite ONE block of a newsletter by natural-language instruction (e.g. 'rewrite the block about the promo to be more urgent', 'shorten the intro'). Locates the block automatically (heading/keyword match) and returns a short preview — never the full body. Use for: shorten this newsletter's intro, make the CTA punchier.",
       "action_type": "write",
       "chain_callable": true,
       "effects": [
