@@ -1,6 +1,6 @@
 {
   "manifest_schema_version": 3,
-  "sdk_version": "5.9.3",
+  "sdk_version": "5.9.6",
   "app_id": "imperal-newsletter-writer-extension",
   "version": "1.0.0",
   "name": "Newsletter Writer",
@@ -2519,6 +2519,57 @@
       "owner_chat_tool": "newsletter_writer"
     },
     {
+      "name": "save_full_newsletter",
+      "description": "PANEL-ONLY: replace the entire newsletter body from the panel's single merged editor. Splits the submitted document into blocks at heading boundaries (button/image/divider blocks decode from their marker-link paragraphs — see richtext.py) — this is the one path that lets a block be added/removed/reordered by editing the document directly. Not for chat use — Webbee should use generate_newsletter or patch_newsletter to write content.",
+      "action_type": "write",
+      "chain_callable": true,
+      "effects": [
+        "update:newsletter"
+      ],
+      "id_projection": "",
+      "params_schema": {
+        "description": "PANEL-ONLY: the whole merged document from the single-window editor —\nnot something Webbee should ever construct from chat. Mirrors Article\nWriter's SaveFullArticleParams; button/image/divider blocks round-trip\nthrough richtext.py's marker-paragraph encoding (see that module's\ndocstring).",
+        "properties": {
+          "newsletter_id": {
+            "title": "Newsletter Id",
+            "type": "string"
+          },
+          "content_html": {
+            "default": "",
+            "maxLength": 400000,
+            "title": "Content Html",
+            "type": "string"
+          }
+        },
+        "required": [
+          "newsletter_id"
+        ],
+        "title": "SaveFullNewsletterParams",
+        "type": "object"
+      },
+      "return_schema": {
+        "properties": {
+          "deleted": {
+            "default": true,
+            "title": "Deleted",
+            "type": "boolean"
+          },
+          "id": {
+            "default": "",
+            "title": "Id",
+            "type": "string"
+          }
+        },
+        "title": "DeletedResponse",
+        "type": "object"
+      },
+      "event": "newsletter-writer.newsletter.section_saved",
+      "background": false,
+      "long_running": false,
+      "scopes": [],
+      "owner_chat_tool": "newsletter_writer"
+    },
+    {
       "name": "delete_newsletter",
       "description": "Permanently delete a newsletter. Use for: удали рассылку, delete this newsletter.",
       "action_type": "destructive",
@@ -2922,19 +2973,29 @@
       "panel_id": "secrets",
       "slot": "right",
       "title": "Secrets",
-      "tree": {}
+      "tree": {},
+      "icon": "KeyRound",
+      "refresh": "manual",
+      "center_overlay": false
     },
     {
       "panel_id": "sidebar",
       "slot": "left",
       "title": "Newsletter Writer",
-      "tree": {}
+      "tree": {},
+      "icon": "Mail",
+      "refresh": "on_event:newsletter-writer.project.created,newsletter-writer.project.updated,newsletter-writer.project.deleted",
+      "center_overlay": false,
+      "default_width": 260
     },
     {
       "panel_id": "workspace",
       "slot": "center",
       "title": "Newsletter Writer",
-      "tree": {}
+      "tree": {},
+      "icon": "Mail",
+      "refresh": "on_event:newsletter-writer.newsletter.created,newsletter-writer.newsletter.status_changed,newsletter-writer.newsletter.section_saved,newsletter-writer.newsletter.patched,newsletter-writer.newsletter.deleted,newsletter-writer.newsletter.generation_started,newsletter-writer.project.deleted",
+      "center_overlay": false
     }
   ]
 }

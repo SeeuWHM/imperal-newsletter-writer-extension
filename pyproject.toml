@@ -11,8 +11,8 @@ dev = ["pytest>=8.0", "pytest-asyncio>=0.23"]
 [tool.setuptools]
 py-modules = [
     "main", "app", "params", "response_models",
-    "api_client", "navstate", "skeleton",
-    "handlers_projects", "handlers_newsletters", "handlers_generate",
+    "api_client", "richtext", "navstate", "skeleton",
+    "handlers_projects", "handlers_fill", "handlers_newsletters", "handlers_generate",
     "panels_side", "panels_workspace",
 ]
 

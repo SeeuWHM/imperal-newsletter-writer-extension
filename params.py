@@ -176,3 +176,12 @@ class UpdateNewsletterSectionParams(BaseModel):
     image_url: Optional[str] = Field(default=None, max_length=2000)
     image_alt: Optional[str] = Field(default=None, max_length=300)
 
+
+class SaveFullNewsletterParams(BaseModel):
+    """PANEL-ONLY: the whole merged document from the single-window editor —
+    not something Webbee should ever construct from chat. Mirrors Article
+    Writer's SaveFullArticleParams; button/image/divider blocks round-trip
+    through richtext.py's marker-paragraph encoding (see that module's
+    docstring)."""
+    newsletter_id: str = Field(...)
+    content_html: str = Field(default="", max_length=400000)

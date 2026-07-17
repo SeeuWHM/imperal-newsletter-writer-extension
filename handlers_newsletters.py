@@ -20,8 +20,10 @@ from api_client import call_backend
 from params import (
     CreateNewsletterParams, ListNewslettersParams, NewsletterIdParams,
     UpdateNewsletterStatusParams, UpdateNewsletterMetaParams, UpdateNewsletterSectionParams,
+    SaveFullNewsletterParams,
 )
 from response_models import NewsletterSummaryRecord, NewsletterListResponse, DeletedResponse
+from richtext import html_to_sections
 
 
 def _err(data: dict) -> ActionResult:
@@ -165,6 +167,34 @@ async def fn_update_newsletter_section(ctx, params: UpdateNewsletterSectionParam
         return _err(data)
     return ActionResult.success(
         data=DeletedResponse(deleted=False), summary="Block saved.", refresh_panels=["workspace"],
+    )
+
+
+@chat.function(
+    "save_full_newsletter",
+    description=(
+        "PANEL-ONLY: replace the entire newsletter body from the panel's single merged editor. "
+        "Splits the submitted document into blocks at heading boundaries (button/image/divider "
+        "blocks decode from their marker-link paragraphs — see richtext.py) — this is the one "
+        "path that lets a block be added/removed/reordered by editing the document directly. "
+        "Not for chat use — Webbee should use generate_newsletter or patch_newsletter to write content."
+    ),
+    action_type="write",
+    event="newsletter-writer.newsletter.section_saved",
+    effects=["update:newsletter"],
+    data_model=DeletedResponse,
+)
+async def fn_save_full_newsletter(ctx, params: SaveFullNewsletterParams) -> ActionResult:
+    """Panel's single-editor Save — split the merged HTML back into blocks."""
+    sections = html_to_sections(params.content_html)
+    data = await call_backend(
+        ctx, "PUT", f"/v1/newsletters/{params.newsletter_id}/sections",
+        json={"sections": sections},
+    )
+    if "error" in data:
+        return _err(data)
+    return ActionResult.success(
+        data=DeletedResponse(deleted=False), summary="Newsletter saved.", refresh_panels=["workspace"],
     )
 
 

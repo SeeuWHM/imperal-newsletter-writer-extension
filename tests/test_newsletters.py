@@ -20,6 +20,7 @@ import api_client
 from params import (
     CreateNewsletterParams, ListNewslettersParams, NewsletterIdParams,
     UpdateNewsletterStatusParams, UpdateNewsletterMetaParams, UpdateNewsletterSectionParams,
+    SaveFullNewsletterParams,
     GenerateNewsletterParams, GenerationJobStatusParams, PatchNewsletterParams,
 )
 
@@ -115,6 +116,32 @@ async def test_update_newsletter_section_requires_a_field(monkeypatch):
         _ctx(), UpdateNewsletterSectionParams(newsletter_id="n1", order_index=0)
     )
     assert result.status == "error"
+
+
+@pytest.mark.asyncio
+async def test_save_full_newsletter_splits_document_into_blocks(monkeypatch):
+    captured = {}
+
+    async def fake_call(ctx, method, path, **kw):
+        assert method == "PUT" and path == "/v1/newsletters/n1/sections"
+        captured["sections"] = kw["json"]["sections"]
+        return {}
+
+    monkeypatch.setattr(handlers_newsletters, "call_backend", fake_call)
+    html = (
+        "<h2>Welcome</h2><p>Hello there.</p>"
+        "<p>\U0001F518 <a href=\"https://x.com/promo\">Get 50% off</a></p>"
+        "<p>\u25AC\u25AC\u25AC divider \u25AC\u25AC\u25AC</p>"
+    )
+    result = await handlers_newsletters.fn_save_full_newsletter(
+        _ctx(), SaveFullNewsletterParams(newsletter_id="n1", content_html=html)
+    )
+    assert result.status == "success"
+    sections = captured["sections"]
+    assert [s["block_type"] for s in sections] == ["text", "button", "divider"]
+    assert sections[0]["heading"] == "Welcome"
+    assert sections[1]["button_url"] == "https://x.com/promo"
+    assert sections[1]["button_label"] == "Get 50% off"
 
 
 @pytest.mark.asyncio

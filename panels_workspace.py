@@ -7,10 +7,18 @@ many newsletters or how long they are. This is the ONLY place full
 newsletter bodies are ever displayed — chat functions never receive them
 (see response_models.NewsletterSummaryRecord's docstring).
 
-Unlike Article Writer's plain-text sections, a newsletter block has a
-block_type (text/button/image/divider) with distinct fields per kind — so
-this panel edits blocks individually (list + per-block form) rather than
-force-fitting everything into one merged rich-text document.
+A newsletter block has a block_type (text/button/image/divider) with
+distinct fields per kind — unlike Article Writer's plain heading+content
+sections. This panel still edits the WHOLE newsletter as one seamless
+merged ui.RichEditor document (richtext.sections_to_html /
+richtext.html_to_sections), not N separate per-block forms: button/image/
+divider blocks round-trip as an ordinary paragraph containing a real,
+clickable link with a distinctive marker (see richtext.py's module
+docstring for why — TipTap's confirmed-safe schema has no native
+button/divider node, so this is the safest AND most human-editable
+encoding). Saving posts the whole document to save_full_newsletter, which
+splits it back into blocks at heading boundaries — exactly Article
+Writer's save_full_article contract.
 
 Routing: `__panel__workspace` accepts (view, project_id, newsletter_id) as
 plain kwargs (SDK panel mechanism — see imperal_sdk.extension.Extension.panel).
@@ -25,10 +33,10 @@ from imperal_sdk import ui
 from app import ext
 from api_client import call_backend
 from navstate import load_nav, save_nav
+from richtext import sections_to_html
 
 STATUS_ORDER = ["idea", "writing", "review", "scheduled", "sent"]
 STATUS_COLOR = {"idea": "gray", "writing": "blue", "review": "yellow", "scheduled": "purple", "sent": "green"}
-BLOCK_TYPES = ["text", "button", "image", "divider"]
 
 
 def _back_button(project_id: str) -> ui.UINode:
@@ -74,27 +82,23 @@ async def _render_newsletters_view(ctx, project_id: str) -> ui.UINode:
     return ui.Grid(columns=len(STATUS_ORDER), gap=3, children=columns)
 
 
-def _block_card(newsletter_id: str, order_index: int, s: dict) -> ui.UINode:
-    block_type = s.get("block_type", "text")
-    fields = [
-        ui.Select(param_name="block_type", value=block_type,
-                  options=[{"value": b, "label": b.capitalize()} for b in BLOCK_TYPES]),
-        ui.Input(param_name="heading", value=s.get("heading") or "", placeholder="Heading (optional)"),
-    ]
-    if block_type == "button":
-        fields.append(ui.Input(param_name="button_url", value=s.get("button_url") or "", placeholder="Button URL"))
-        fields.append(ui.Input(param_name="button_label", value=s.get("button_label") or "", placeholder="Button label"))
-    elif block_type == "image":
-        fields.append(ui.Input(param_name="image_url", value=s.get("image_url") or "", placeholder="Image URL"))
-        fields.append(ui.Input(param_name="image_alt", value=s.get("image_alt") or "", placeholder="Alt text"))
-    if block_type != "divider":
-        fields.append(ui.TextArea(param_name="content", value=s.get("content") or "", rows=4, placeholder="Block content"))
-
-    return ui.Card(content=ui.Form(
-        action="update_newsletter_section", submit_label=f"Save block #{order_index}",
-        defaults={"newsletter_id": newsletter_id, "order_index": order_index},
-        children=fields,
-    ))
+def _newsletter_editor(newsletter_id: str, sections: list[dict]) -> ui.UINode:
+    """One seamless editable document — headings are real <h2>s inside the
+    same RichEditor, not separate boxes/cards per block. Button/image/
+    divider blocks appear as an ordinary paragraph carrying a real, marked
+    link (see richtext.py) so they're still directly visible and editable,
+    just not a separate form. Saving splits it back into blocks at heading
+    boundaries (richtext.html_to_sections) — adding/removing/reordering a
+    heading here is how blocks get added/removed/reordered, exactly like
+    Article Writer's single-editor contract."""
+    return ui.Form(
+        action="save_full_newsletter",
+        submit_label="Save newsletter",
+        defaults={"newsletter_id": newsletter_id},
+        children=[
+            ui.RichEditor(param_name="content_html", content=sections_to_html(sections)),
+        ],
+    )
 
 
 async def _render_newsletter_view(ctx, project_id: str, newsletter_id: str) -> ui.UINode:
@@ -157,11 +161,9 @@ async def _render_newsletter_view(ctx, project_id: str, newsletter_id: str) -> u
         )
     else:
         # No "Patch with AI" form here — that's Webbee's job via chat
-        # (patch_newsletter); this panel edits blocks directly, it doesn't
-        # duplicate Webbee's own AI-writing actions.
-        body = ui.Stack(gap=2, children=[
-            _block_card(newsletter_id, s.get("order_index", i), s) for i, s in enumerate(sections)
-        ])
+        # (patch_newsletter); this panel edits the merged document directly,
+        # it doesn't duplicate Webbee's own AI-writing actions.
+        body = _newsletter_editor(newsletter_id, sections)
 
     return ui.Stack(gap=3, className="px-4 pb-4", children=[
         top_bar,
