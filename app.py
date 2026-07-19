@@ -49,7 +49,7 @@ SERVER_URL = os.environ.get("NEWSLETTER_WRITER_BACKEND_URL", "") or "https://api
 
 ext = Extension(
     "imperal-newsletter-writer-extension",
-    version="1.5.0",
+    version="1.6.0",
     display_name="Newsletter Writer",
     description=(
         "Project-based email newsletter writing: keep per-project context (brand voice, goals, "
@@ -126,3 +126,7 @@ async def health(ctx) -> dict:
     """Report whether the backend JWT is configured."""
     jwt = await ctx.secrets.get("backend_jwt")
     return {"status": "ok" if jwt else "degraded", "version": ext.version}
+
+
+from cache_helpers import CachedBackendPayload  # noqa: E402
+ext.cache_model("newsletter_writer_backend_payload")(CachedBackendPayload)
