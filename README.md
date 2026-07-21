@@ -1,7 +1,7 @@
 # imperal-newsletter-writer-extension
 
-[![Imperal SDK](https://img.shields.io/badge/imperal--sdk-5.9.9-blue)](https://pypi.org/project/imperal-sdk/)
-[![Version](https://img.shields.io/badge/version-1.5.0-green)](https://github.com/SeeuWHM/imperal-newsletter-writer-extension/releases)
+[![Imperal SDK](https://img.shields.io/badge/imperal--sdk-5.9.12-blue)](https://pypi.org/project/imperal-sdk/)
+[![Version](https://img.shields.io/badge/version-1.6.0-green)](https://github.com/SeeuWHM/imperal-newsletter-writer-extension/releases)
 [![License](https://img.shields.io/badge/license-LGPL--2.1-orange)](LICENSE)
 [![Platform](https://img.shields.io/badge/platform-Imperal%20Cloud-purple)](https://panel.imperal.io)
 
@@ -62,6 +62,7 @@ imperal-newsletter-writer-extension/
 ├── handlers_generate.py        # Chat functions: generate_newsletter, status poll, patch_newsletter
 ├── panels_side.py               # Left panel — project switcher + new-project form
 ├── panels_workspace.py           # Center panel — kanban board + single merged RichEditor
+├── cache_helpers.py              # ctx.cache wrapper — caches the sidebar project-list + workspace board reads only
 ├── icon.svg                      # Extension icon
 └── imperal.json                  # Generated manifest (via `imperal build`)
 ```
@@ -118,7 +119,7 @@ The `backend_jwt` secret (`scope="app"`, developer-managed only) authenticates t
 
 ```bash
 python3 -m py_compile *.py          # syntax check — mandatory before every commit
-.venv/bin/pytest -q                 # 70 tests: handlers, richtext, skeleton, newsletters, params
+.venv/bin/pytest -q                 # 72 tests: handlers, richtext, skeleton, newsletters, params, cache_helpers
 imperal build .                     # regenerate imperal.json from registered tools
 imperal validate .                  # validate against current SDK federal rules (V1-V24+V31)
 ```
@@ -127,5 +128,5 @@ imperal validate .                  # validate against current SDK federal rules
 
 ## Built with
 
-- [imperal-sdk](https://github.com/imperalcloud/imperal-sdk) 5.9.9
+- [imperal-sdk](https://github.com/imperalcloud/imperal-sdk) 5.9.12
 - [Imperal Cloud](https://panel.imperal.io)

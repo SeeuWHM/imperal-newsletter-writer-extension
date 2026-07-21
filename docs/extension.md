@@ -1,12 +1,15 @@
 # Newsletter Writer Extension — Full Documentation
 
-**Version:** 1.5.0 (code HEAD = prod, deployed and verified live 2026-07-18) |
-**SDK:** imperal-sdk 5.9.9 | **app_id:** `imperal-newsletter-writer-extension` | **tool_name:** `newsletter_writer`
+**Version:** 1.6.0 (code HEAD = prod, verified live 2026-07-21) |
+**SDK:** imperal-sdk 5.9.12 | **app_id:** `imperal-newsletter-writer-extension` | **tool_name:** `newsletter_writer`
 **Git:** `github.com/SeeuWHM/imperal-newsletter-writer-extension`
 **Backend:** `SeeU-Extensions/newsletter-writer-backend/` (source of truth for backend —
 schema, pipeline, deploy). This doc covers the extension side only. Sibling of Article Writer.
 
-> **Resume point (2026-07-18).** Reflects the real code at HEAD, and it is the real code running in
+> **Resume point (2026-07-21).** `cache_helpers.py` now wraps the sidebar project-list and workspace
+> board-list panel reads in a short `ctx.cache` TTL (busted instantly by every mutating action's
+> `refresh_panels` event) — the single-newsletter detail view stays deliberately uncached since it's
+> what's actively being generated/edited. Reflects the real code at HEAD, and it is the real code running in
 > prod — confirmed live today (`list_newsletters`, `open_project`). `capabilities` now declares
 > `notify:push` (see "Deploy gotcha" below) — without it every deploy silently rolled back to the
 > previous commit.
@@ -64,7 +67,7 @@ Same two-credential model as Article Writer: `backend_jwt` (`ext.secret scope="a
 authenticates the extension) + `X-Imperal-Id` (per-caller tenancy). No external per-user account, so
 no user-facing secret. No cross-extension IPC.
 
-Every `call_backend` failure now carries a **structured `error_code`** (SDK 5.9.9
+Every `call_backend` failure now carries a **structured `error_code`** (SDK 5.9.12
 `ActionResult.error(code=...)`), not just prose — see "Error handling" below.
 
 ---
@@ -74,7 +77,8 @@ Every `call_backend` failure now carries a **structured `error_code`** (SDK 5.9.
 ```
 newsletter-writer-extension/
 ├── main.py · app.py · api_client.py · navstate.py · icon.svg · imperal.json
-├── pyproject.toml        — imperal-sdk>=5.9.9
+├── pyproject.toml        — imperal-sdk>=5.9.12
+├── cache_helpers.py      — ctx.cache wrapper for the sidebar project-list + workspace board reads
 ├── params.py             — chat-function param models (mirror backend request schemas).
 │                            EntityId type rejects obvious placeholder ids ("unknown", "null", "",
 │                            "string", …) client-side before ever hitting the network.
@@ -95,7 +99,7 @@ newsletter-writer-extension/
 ├── panels_side.py        — LEFT "sidebar": active project + project switcher
 ├── panels_workspace.py   — CENTER "workspace": newsletter board + single-editor view (H1 subject)
 └── tests/  test_handlers.py · test_newsletters.py · test_richtext.py · test_skeleton.py ·
-           test_params.py   (70 tests, green)
+           test_params.py · test_cache_helpers.py   (72 tests, green)
 ```
 
 Every file < 300 lines.
@@ -242,7 +246,7 @@ accurately and never broadens a promise.
 
 ## Error handling (2026-07-18)
 
-Every `call_backend()` failure now carries a structured `error_code` (SDK 5.9.9
+Every `call_backend()` failure now carries a structured `error_code` (SDK 5.9.12
 `ActionResult.error(code=...)`) instead of bare prose:
 
 | Situation | `error_code` | `retryable` |
@@ -293,7 +297,7 @@ small); the rest is cheap DB. Notes on the current prices:
 
 ## Tests
 
-70 tests (`.venv/bin/pytest tests/ -q`):
+72 tests (`.venv/bin/pytest tests/ -q`):
 - `test_handlers.py` — project CRUD, fill categories/items, **`open_project` refreshes both panels + resets `newsletter_id`**
 - `test_newsletters.py` — newsletter CRUD, generate/patch, read_full/edit_full round-trip,
   **`export_newsletter_text` returns real HTML with no literal Markdown syntax**
@@ -302,6 +306,7 @@ small); the rest is cheap DB. Notes on the current prices:
   review count rises against the persisted baseline, seeds silently on first-ever run, never
   re-notifies when the count is unchanged
 - `test_params.py` — placeholder ids (`"unknown"`, `""`, …) rejected before any network call
+- `test_cache_helpers.py` — `cached_call()` TTL/key behaviour
 
 ---
 
